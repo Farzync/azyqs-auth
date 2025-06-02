@@ -146,7 +146,7 @@ export function TOTPVerifyForm({
   };
 
   const handleBackupCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     backupForm.setValue("code", value);
 
     if (backupForm.formState.errors.code) {

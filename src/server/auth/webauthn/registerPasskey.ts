@@ -67,7 +67,7 @@ export async function registerPasskeyAction(
 
     const registeredIp = await getClientIp();
 
-    const newCredential = await prisma.userWebauthnCredential.create({
+    await prisma.userWebauthnCredential.create({
       data: {
         userId: user.id,
         credentialId,
