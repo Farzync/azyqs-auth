@@ -1,4 +1,5 @@
 export enum AuditLogAction {
+  REGISTER = "register",
   LOGIN = "login",
   EDIT_PROFILE = "edit_profile",
   CHANGE_PASSWORD = "change_password",
