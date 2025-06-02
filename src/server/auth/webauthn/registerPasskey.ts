@@ -5,8 +5,9 @@ import { getProfile } from "@/server/user";
 import { formatError, logError } from "@/lib/auth/error";
 import { prisma } from "@/lib/db";
 import { getClientIp } from "@/utils/getClientIp";
-
 import type { RegistrationResponseJSON } from "@simplewebauthn/types";
+import { createUserAuditLog } from "@/lib/auditLog";
+import { AuditLogAction } from "@/types/auditlog";
 
 /**
  * Registers a new WebAuthn passkey credential for the currently authenticated user.
@@ -15,11 +16,19 @@ import type { RegistrationResponseJSON } from "@simplewebauthn/types";
  * @param {{ deviceName?: string; deviceOS?: string }} [deviceInfo] - Optional device info to associate with the credential.
  * @returns {Promise<{ success: boolean; message: string } | { error: string }>}
  *   Success object if registered, or error object if failed or unauthorized.
+ *
+ * Side effects:
+ * - Verifies passkey registration response
+ * - Creates new WebAuthn credential in database
+ * - Creates audit log entry for passkey registration
+ * - Logs errors on failure
  */
 export async function registerPasskeyAction(
   response: RegistrationResponseJSON,
   deviceInfo?: { deviceName?: string; deviceOS?: string }
 ) {
+  const timestamp = new Date();
+
   try {
     const user = await getProfile();
     if (!user) {
@@ -32,6 +41,15 @@ export async function registerPasskeyAction(
     );
 
     if (!verification || !verification.verified) {
+      await createUserAuditLog({
+        userId: user.id,
+        action: AuditLogAction.REGISTER_PASSKEY,
+        details: `Failed passkey registration for username: ${user.username} - verification failed`,
+        success: false,
+        errorMessage: "Passkey registration verification failed",
+        at: timestamp,
+      });
+
       return formatError("Passkey registration failed");
     }
 
@@ -49,7 +67,7 @@ export async function registerPasskeyAction(
 
     const registeredIp = await getClientIp();
 
-    await prisma.userWebauthnCredential.create({
+    const newCredential = await prisma.userWebauthnCredential.create({
       data: {
         userId: user.id,
         credentialId,
@@ -62,9 +80,39 @@ export async function registerPasskeyAction(
       },
     });
 
+    const deviceDetails =
+      deviceInfo?.deviceName && deviceInfo?.deviceOS
+        ? `${deviceInfo.deviceName} - ${deviceInfo.deviceOS}`
+        : "Unknown device";
+
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.REGISTER_PASSKEY,
+      details: `Passkey successfully registered for username: ${user.username} on device: ${deviceDetails}`,
+      success: true,
+      at: timestamp,
+    });
+
     return { success: true, message: "Passkey registered successfully" };
   } catch (error) {
     logError("registerPasskeyAction", error);
+    try {
+      const user = await getProfile();
+      if (user) {
+        await createUserAuditLog({
+          userId: user.id,
+          action: AuditLogAction.REGISTER_PASSKEY,
+          details: `Failed passkey registration for username: ${user.username} - system error`,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      }
+    } catch (auditError) {
+      logError("registerPasskeyAction - audit log creation failed", auditError);
+    }
+
     return formatError("Failed to register passkey");
   }
 }

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { TokenPayload } from "@/types/token";
 import { formatError, getCookie, logError, verifyToken } from "@/lib/auth";
 import { generateTOTPSecret, generateQRCode } from "@/lib/auth/totp";
+import { createUserAuditLog } from "@/lib/auditLog";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 
 /**
  * Set up a new TOTP secret for the authenticated user and return QR code data.
@@ -29,6 +31,7 @@ export async function setupTOTPAction() {
     return formatError("Invalid token");
   }
 
+  const timestamp = new Date();
   try {
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
@@ -36,10 +39,29 @@ export async function setupTOTPAction() {
     });
 
     if (!user) {
+      await createUserAuditLog({
+        userId: payload.id,
+        action: AuditLogAction.ENABLE_MFA,
+        details: `Attempted TOTP setup but user not found`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: "User not found",
+        at: timestamp,
+      });
       return formatError("User not found");
     }
 
     if (!user.username || user.username.trim() === "") {
+      await createUserAuditLog({
+        userId: user.id,
+        action: AuditLogAction.ENABLE_MFA,
+        details: `Attempted TOTP setup but username missing`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage:
+          "Username is missing. Cannot generate TOTP without username.",
+        at: timestamp,
+      });
       return formatError(
         "Username is missing. Cannot generate TOTP without username."
       );
@@ -61,6 +83,15 @@ export async function setupTOTPAction() {
       },
     });
 
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.ENABLE_MFA,
+      details: `TOTP setup (secret generated) for username: ${user.username}`,
+      method: AuditLogMethod.MFA,
+      success: true,
+      at: timestamp,
+    });
+
     return {
       success: true,
       qrCode: qrCodeDataUrl,
@@ -68,6 +99,15 @@ export async function setupTOTPAction() {
     };
   } catch (error) {
     logError("Setup TOTP", error);
+    await createUserAuditLog({
+      userId: payload.id,
+      action: AuditLogAction.ENABLE_MFA,
+      details: `Failed to setup TOTP`,
+      method: AuditLogMethod.MFA,
+      success: false,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      at: timestamp,
+    });
     return formatError("Failed to setup TOTP");
   }
 }

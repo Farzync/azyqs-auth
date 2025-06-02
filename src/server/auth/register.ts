@@ -9,6 +9,8 @@ import {
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/hashPassword";
+import { AuditLogAction } from "@/types/auditlog";
+import { createUserAuditLog } from "@/lib/auditLog";
 
 /**
  * Register a new user account with validation, reCAPTCHA, and CSRF protection.
@@ -21,6 +23,7 @@ import { hashPassword } from "@/lib/auth/hashPassword";
  * - Validates reCAPTCHA
  * - Checks for existing user
  * - Hashes password and creates user in database
+ * - Creates audit log entry for registration attempt
  * - Logs errors on failure
  *
  * Example usage:
@@ -46,6 +49,9 @@ export async function registerAction(input: unknown) {
     return formatError("reCAPTCHA verification failed. Please try again.");
   }
 
+  let userId: string | null = null;
+  const timestamp = new Date();
+
   try {
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -54,12 +60,32 @@ export async function registerAction(input: unknown) {
     });
 
     if (existingUser) {
+      if (existingUser.email === email) {
+        await createUserAuditLog({
+          userId: existingUser.id,
+          action: AuditLogAction.REGISTER,
+          details: `Registration attempt with existing email: ${email}`,
+          success: false,
+          errorMessage: "Email already exists",
+          at: timestamp,
+        });
+      } else {
+        await createUserAuditLog({
+          userId: existingUser.id,
+          action: AuditLogAction.REGISTER,
+          details: `Registration attempt with existing username: ${username}`,
+          success: false,
+          errorMessage: "Username already exists",
+          at: timestamp,
+        });
+      }
+
       return formatError("Email or username is already been used");
     }
 
     const hashedPassword = await hashPassword(password);
 
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         name,
         username,
@@ -68,9 +94,36 @@ export async function registerAction(input: unknown) {
       },
     });
 
+    userId = newUser.id;
+
+    await createUserAuditLog({
+      userId,
+      action: AuditLogAction.REGISTER,
+      details: `User registered successfully with username: ${username}`,
+      success: true,
+      at: timestamp,
+    });
+
     return { success: true };
   } catch (error) {
     logError("registerAction", error);
+
+    if (userId) {
+      try {
+        await createUserAuditLog({
+          userId,
+          action: AuditLogAction.REGISTER,
+          details: `Registration failed during user creation`,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      } catch (auditError) {
+        logError("registerAction", auditError);
+      }
+    }
+
     return formatError("Registration failed");
   }
 }

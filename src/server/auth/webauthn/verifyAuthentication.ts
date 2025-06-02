@@ -6,6 +6,8 @@ import { getCookie, deleteCookie, setCookie } from "@/lib/auth/cookies";
 import { prisma } from "@/lib/db";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { formatError, signToken, logError } from "@/lib/auth";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
+import { createUserAuditLog } from "@/lib/auditLog";
 
 const rpID = process.env.AUTH_RP_ID || "localhost";
 const origin = process.env.AUTH_ORIGIN || "http://localhost:3000";
@@ -16,10 +18,22 @@ const origin = process.env.AUTH_ORIGIN || "http://localhost:3000";
  * @param {AuthenticationResponseJSON} response - The authentication response from the client.
  * @returns {Promise<{ success?: boolean; error?: string; message?: string }>}
  *   Success object if verified, or error object if failed.
+ *
+ * Side effects:
+ * - Verifies WebAuthn authentication response
+ * - Updates credential counter
+ * - Issues JWT and sets cookie if valid
+ * - Creates audit log entry for passkey authentication
+ * - Logs errors on failure
  */
+
 export async function verifyAuthenticationAction(
   response: AuthenticationResponseJSON
 ): Promise<{ success?: boolean; error?: string; message?: string }> {
+  const timestamp = new Date();
+  let userId: string | null = null;
+  let username: string | null = null;
+
   try {
     const expectedChallenge = await getCookie("webauthn_auth_challenge");
 
@@ -53,6 +67,9 @@ export async function verifyAuthenticationAction(
       return formatError("Credential not found");
     }
 
+    userId = credential.user.id;
+    username = credential.user.username;
+
     const verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge,
@@ -68,6 +85,16 @@ export async function verifyAuthenticationAction(
     });
 
     if (!verification.verified) {
+      await createUserAuditLog({
+        userId,
+        action: AuditLogAction.LOGIN,
+        details: `Failed passkey authentication for username: ${username} - verification failed`,
+        method: AuditLogMethod.PASSKEY,
+        success: false,
+        errorMessage: "Passkey verification failed",
+        at: timestamp,
+      });
+
       return formatError("Authentication failed");
     }
 
@@ -90,9 +117,39 @@ export async function verifyAuthenticationAction(
       sameSite: "strict",
     });
 
+    await createUserAuditLog({
+      userId,
+      action: AuditLogAction.LOGIN,
+      details: `Successful passkey authentication for username: ${username}`,
+      method: AuditLogMethod.PASSKEY,
+      success: true,
+      at: timestamp,
+    });
+
     return { success: true, message: "Authentication successful" };
   } catch (error) {
     logError("verifyAuthenticationAction", error);
+
+    if (userId && username) {
+      try {
+        await createUserAuditLog({
+          userId,
+          action: AuditLogAction.LOGIN,
+          details: `Failed passkey authentication for username: ${username} - system error`,
+          method: AuditLogMethod.PASSKEY,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      } catch (auditError) {
+        logError(
+          "verifyAuthenticationAction - audit log creation failed",
+          auditError
+        );
+      }
+    }
+
     return formatError("Authentication failed");
   } finally {
     await deleteCookie("webauthn_auth_challenge");

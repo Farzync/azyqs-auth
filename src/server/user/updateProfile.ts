@@ -8,6 +8,8 @@ import {
   formatError,
   logError,
 } from "@/lib/auth";
+import { createUserAuditLog } from "@/lib/auditLog";
+import { AuditLogAction } from "@/types/auditlog";
 import { prisma } from "@/lib/db";
 
 /**
@@ -65,9 +67,32 @@ export async function updateProfileAction(data: unknown) {
       where: { id: user.id },
       data: { name, email, username },
     });
+
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.EDIT_PROFILE,
+      details: `Profile updated: name=${name}, email=${email}, username=${username}`,
+      success: true,
+      at: new Date(),
+    });
+
     return { success: true, data: updated };
   } catch (error) {
     logError("updateProfileAction", error);
+    try {
+      if (user?.id) {
+        await createUserAuditLog({
+          userId: user.id,
+          action: AuditLogAction.EDIT_PROFILE,
+          details: `Profile update failed`,
+          success: false,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          at: new Date(),
+        });
+      }
+    } catch (auditError) {
+      logError("updateProfileAction.audit", auditError);
+    }
     return formatError("Failed to update profile");
   }
 }

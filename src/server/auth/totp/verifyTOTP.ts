@@ -13,6 +13,8 @@ import { verifyTOTPCode } from "@/lib/auth/totp";
 import { prisma } from "@/lib/db";
 import { totpVerifySchema } from "@/lib/zod/schemas/totp.schema";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
+import { createUserAuditLog } from "@/lib/auditLog";
 
 /**
  * Verify a TOTP code for 2FA login and issue a session token if valid.
@@ -26,6 +28,7 @@ import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
  * - Validates CSRF token
  * - Checks TOTP code against stored secret
  * - Issues JWT and sets cookie if valid
+ * - Creates audit log entry for MFA verification
  * - Logs errors on failure
  *
  * Example usage:
@@ -37,6 +40,8 @@ export async function verifyTOTPAction(input: {
 }) {
   const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
   const tempUserId = await getCookie("temp_user_id");
+  const timestamp = new Date();
+
   if (!tempUserId) {
     return formatError("Session expired, please login again");
   }
@@ -59,18 +64,44 @@ export async function verifyTOTPAction(input: {
       );
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: tempUserId },
+      select: { username: true },
+    });
+
     const userMfaCredential = await prisma.userMfaCredential.findUnique({
       where: { userId: tempUserId },
     });
 
     if (!userMfaCredential || !userMfaCredential.isEnabled) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Failed MFA verification for username: ${user?.username} - TOTP not enabled`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: "TOTP not enabled",
+        at: timestamp,
+      });
+
       return formatError("TOTP not enabled");
     }
 
     const isValid = verifyTOTPCode(code, userMfaCredential.secret);
     if (!isValid) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Failed MFA verification for username: ${user?.username} - invalid TOTP code`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: "Invalid TOTP code",
+        at: timestamp,
+      });
+
       return formatError("Invalid TOTP code");
     }
+
     const token = await signToken({ id: tempUserId });
     await setCookie("token", token, {
       httpOnly: true,
@@ -79,9 +110,39 @@ export async function verifyTOTPAction(input: {
       path: "/",
     });
     await deleteCookie("temp_user_id");
+
+    await createUserAuditLog({
+      userId: tempUserId,
+      action: AuditLogAction.LOGIN,
+      details: `Successful MFA verification and login completed for username: ${user?.username}`,
+      method: AuditLogMethod.MFA,
+      success: true,
+      at: timestamp,
+    });
+
     return { success: true };
   } catch (error) {
     logError("Verify TOTP", error);
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: tempUserId },
+        select: { username: true },
+      });
+
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Failed MFA verification for username: ${user?.username} - system error`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        at: timestamp,
+      });
+    } catch (auditError) {
+      logError("verifyTOTPAction - audit log creation failed", auditError);
+    }
+
     return formatError("Failed to verify TOTP");
   }
 }

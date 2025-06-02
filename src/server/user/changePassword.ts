@@ -8,6 +8,8 @@ import {
   formatError,
   logError,
 } from "@/lib/auth";
+import { createUserAuditLog } from "@/lib/auditLog";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { prisma } from "@/lib/db";
 import { comparePassword } from "@/lib/auth/comparePassword";
 import { hashPassword } from "@/lib/auth/hashPassword";
@@ -55,9 +57,34 @@ export async function changePasswordAction(data: unknown) {
       where: { id: user.id },
       data: { password: hashedNew },
     });
+
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.CHANGE_PASSWORD,
+      details: `Password changed`,
+      method: AuditLogMethod.PASSWORD,
+      success: true,
+      at: new Date(),
+    });
+
     return { success: true };
   } catch (error) {
     logError("changePasswordAction", error);
+    try {
+      if (user?.id) {
+        await createUserAuditLog({
+          userId: user.id,
+          action: AuditLogAction.CHANGE_PASSWORD,
+          details: `Password change failed`,
+          method: AuditLogMethod.PASSWORD,
+          success: false,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          at: new Date(),
+        });
+      }
+    } catch (auditError) {
+      logError("changePasswordAction.audit", auditError);
+    }
     return formatError("Failed to change password");
   }
 }

@@ -13,6 +13,8 @@ import {
 import { z } from "zod";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { comparePassword } from "@/lib/auth/comparePassword";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
+import { createUserAuditLog } from "@/lib/auditLog";
 
 /**
  * Authenticate a user and set a JWT cookie if credentials are valid.
@@ -25,6 +27,7 @@ import { comparePassword } from "@/lib/auth/comparePassword";
  * - Validates reCAPTCHA
  * - Checks user credentials
  * - Sets authentication cookie
+ * - Creates audit log entry for login attempt
  * - Logs errors on failure
  *
  * Example usage:
@@ -33,6 +36,7 @@ import { comparePassword } from "@/lib/auth/comparePassword";
 export async function loginAction(input: z.infer<typeof loginSchema>) {
   const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
   const parsed = loginSchema.safeParse(input);
+  const timestamp = new Date();
 
   if (!parsed.success) {
     return {
@@ -57,21 +61,53 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
       include: { UserMfaCredential: true },
     });
 
-    if (!user) return formatError("Username or password is incorrect");
-    const isValidPassword = await comparePassword(password, user.password);
-    if (!isValidPassword)
+    if (!user) {
       return formatError("Username or password is incorrect");
+    }
+
+    const isValidPassword = await comparePassword(password, user.password);
+    if (!isValidPassword) {
+      await createUserAuditLog({
+        userId: user.id,
+        action: AuditLogAction.LOGIN,
+        details: `Failed login attempt for username: ${username} - incorrect password`,
+        method: AuditLogMethod.PASSWORD,
+        success: false,
+        errorMessage: "Incorrect password",
+        at: timestamp,
+      });
+
+      return formatError("Username or password is incorrect");
+    }
 
     const userMfaCredential = user.UserMfaCredential[0];
     const isTotpEnabled = userMfaCredential?.isEnabled || false;
 
     if (isTotpEnabled) {
+      await createUserAuditLog({
+        userId: user.id,
+        action: AuditLogAction.LOGIN,
+        details: `Login successful for username: ${username} - MFA required`,
+        method: AuditLogMethod.PASSWORD,
+        success: true,
+        at: timestamp,
+      });
+
       await setCookie("temp_user_id", user.id, { maxAge: 300 });
       return {
         success: true,
         totp_required: true,
       };
     } else {
+      await createUserAuditLog({
+        userId: user.id,
+        action: AuditLogAction.LOGIN,
+        details: `Successful login for username: ${username}`,
+        method: AuditLogMethod.PASSWORD,
+        success: true,
+        at: timestamp,
+      });
+
       const token = await signToken({ id: user.id });
       await setCookie("token", token, { maxAge });
       return { success: true };

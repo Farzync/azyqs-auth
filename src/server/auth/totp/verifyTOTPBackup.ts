@@ -8,6 +8,8 @@ import {
   deleteCookie,
   logError,
 } from "@/lib/auth";
+import { createUserAuditLog } from "@/lib/auditLog";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { verifyBackupCode } from "@/lib/auth/backupCodes";
 import { validateCSRFToken } from "@/lib/auth/csrfToken";
 import { prisma } from "@/lib/db";
@@ -42,6 +44,7 @@ export async function verifyTOTPBackupAction(input: {
     return formatError("Session expired, please login again");
   }
 
+  const timestamp = new Date();
   try {
     const parsed = backupCodeVerifySchema.safeParse(input);
     if (!parsed.success) {
@@ -65,6 +68,15 @@ export async function verifyTOTPBackupAction(input: {
     });
 
     if (!userMfaCredential || !userMfaCredential.isEnabled) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Attempted backup code login but TOTP not enabled`,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: false,
+        errorMessage: "TOTP not enabled",
+        at: timestamp,
+      });
       return formatError("TOTP not enabled");
     }
 
@@ -89,12 +101,38 @@ export async function verifyTOTPBackupAction(input: {
         path: "/",
       });
       await deleteCookie("temp_user_id");
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Successful login using backup code`,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: true,
+        at: timestamp,
+      });
       return { success: true };
     } else {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Failed login using backup code`,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: false,
+        errorMessage: "Invalid backup code",
+        at: timestamp,
+      });
       return formatError("Invalid backup code");
     }
   } catch (error) {
     logError("Verify Backup Code", error);
+    await createUserAuditLog({
+      userId: tempUserId,
+      action: AuditLogAction.LOGIN,
+      details: `Failed login using backup code (system error)`,
+      method: AuditLogMethod.MFA_BACKUP,
+      success: false,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      at: timestamp,
+    });
     return formatError("Failed to verify backup code");
   }
 }

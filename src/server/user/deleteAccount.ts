@@ -9,6 +9,8 @@ import {
   logError,
   deleteCookie,
 } from "@/lib/auth";
+import { createUserAuditLog } from "@/lib/auditLog";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { prisma } from "@/lib/db";
 import { comparePassword } from "@/lib/auth/comparePassword";
 
@@ -53,9 +55,34 @@ export async function deleteAccountAction(data: unknown) {
   try {
     await prisma.user.delete({ where: { id: user.id } });
     await deleteCookie("token");
+
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.DELETE_ACCOUNT,
+      details: `Account deleted`,
+      method: AuditLogMethod.PASSWORD,
+      success: true,
+      at: new Date(),
+    });
+
     return { success: true };
   } catch (error) {
     logError("deleteAccountAction", error);
+    try {
+      if (user?.id) {
+        await createUserAuditLog({
+          userId: user.id,
+          action: AuditLogAction.DELETE_ACCOUNT,
+          details: `Account delete failed`,
+          method: AuditLogMethod.PASSWORD,
+          success: false,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          at: new Date(),
+        });
+      }
+    } catch (auditError) {
+      logError("deleteAccountAction.audit", auditError);
+    }
     return formatError("Failed to delete account");
   }
 }
