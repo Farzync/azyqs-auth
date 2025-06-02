@@ -4,8 +4,9 @@ import { verifyPasskeyRegistrationResponse } from "@/lib/auth/webauthn";
 import { getProfile } from "@/server/user";
 import { formatError, logError } from "@/lib/auth/error";
 import { prisma } from "@/lib/db";
+import { getClientIp } from "@/utils/getClientIp";
+
 import type { RegistrationResponseJSON } from "@simplewebauthn/types";
-import { cookies, headers } from "next/headers";
 
 /**
  * Registers a new WebAuthn passkey credential for the currently authenticated user.
@@ -46,15 +47,7 @@ export async function registerPasskeyAction(
     const publicKeyBuffer = verification.registrationInfo!.credential.publicKey;
     const publicKeyBase64 = Buffer.from(publicKeyBuffer).toString("base64");
 
-    let registeredIp: string | null = null;
-    try {
-      const xff = (await headers()).get("x-forwarded-for");
-      if (xff) {
-        registeredIp = xff.split(",")[0].trim();
-      } else {
-        registeredIp = (await cookies()).get("client-ip")?.value || null;
-      }
-    } catch {}
+    const registeredIp = await getClientIp();
 
     await prisma.userWebauthnCredential.create({
       data: {
