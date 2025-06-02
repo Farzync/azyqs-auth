@@ -1,0 +1,76 @@
+"use server";
+
+import { registerSchema } from "@/lib/zod/schemas/register.schema";
+import {
+  verifyRecaptcha,
+  requireValidCSRFToken,
+  formatError,
+  logError,
+} from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { hashPassword } from "@/lib/auth/hashPassword";
+
+/**
+ * Register a new user account with validation, reCAPTCHA, and CSRF protection.
+ *
+ * @param input {unknown} - The registration data (should match registerSchema)
+ * @returns {Object} Success object or error message with issues
+ *
+ * Side effects:
+ * - Validates CSRF token
+ * - Validates reCAPTCHA
+ * - Checks for existing user
+ * - Hashes password and creates user in database
+ * - Logs errors on failure
+ *
+ * Example usage:
+ * const result = await registerAction({ name, username, email, password, recaptchaToken, csrfToken });
+ */
+export async function registerAction(input: unknown) {
+  const parsed = registerSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      error: "Validation error",
+      issues: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const { name, username, email, password, recaptchaToken, csrfToken } =
+    parsed.data;
+
+  const csrfError = await requireValidCSRFToken(csrfToken);
+  if (csrfError) return csrfError;
+
+  const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+  if (!isRecaptchaValid) {
+    return formatError("reCAPTCHA verification failed. Please try again.");
+  }
+
+  try {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { username }],
+      },
+    });
+
+    if (existingUser) {
+      return formatError("Email or username is already been used");
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await prisma.user.create({
+      data: {
+        name,
+        username,
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    logError("registerAction", error);
+    return formatError("Registration failed");
+  }
+}
