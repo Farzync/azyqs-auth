@@ -30,6 +30,7 @@ import { prisma } from "@/lib/db";
 export async function updateProfileAction(data: unknown) {
   const parsed = updateProfileSchema.safeParse(data);
   if (!parsed.success) {
+    // No audit log, userId is not available
     return {
       error: "Validasi gagal",
       issues: parsed.error.flatten().fieldErrors,
@@ -37,14 +38,31 @@ export async function updateProfileAction(data: unknown) {
   }
 
   const token = await getCookie("token");
-  if (!token) return formatError("Unauthorized");
+  if (!token) {
+    // No audit log, userId is not available
+    return formatError("Unauthorized");
+  }
   const user = await getUserFromToken(token);
-  if (!user) return formatError("Unauthorized");
+  if (!user) {
+    // No audit log, userId is not available
+    return formatError("Unauthorized");
+  }
 
   const { name, email, username, csrfToken } = parsed.data;
 
   const csrfError = await requireValidCSRFToken(csrfToken);
-  if (csrfError) return csrfError;
+  if (csrfError) {
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.EDIT_PROFILE,
+      details: `CSRF validation failed`,
+      method: undefined,
+      success: false,
+      errorMessage: csrfError.error,
+      at: new Date(),
+    });
+    return formatError("CSRF validation failed");
+  }
 
   try {
     const isEmailTaken = await prisma.user.findFirst({

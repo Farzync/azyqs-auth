@@ -32,6 +32,7 @@ import { hashPassword } from "@/lib/auth/hashPassword";
 export async function changePasswordAction(data: unknown) {
   const parsed = changePasswordSchema.safeParse(data);
   if (!parsed.success) {
+    // No audit log, userId is not available
     return {
       error: "Validation error",
       issues: parsed.error.flatten().fieldErrors,
@@ -39,9 +40,15 @@ export async function changePasswordAction(data: unknown) {
   }
 
   const token = await getCookie("token");
-  if (!token) return formatError("Unauthorized");
+  if (!token) {
+    // No audit log, userId is not available
+    return formatError("Unauthorized");
+  }
   const user = await getUserFromToken(token);
-  if (!user) return formatError("User not Found");
+  if (!user) {
+    // No audit log, userId is not available
+    return formatError("User not Found");
+  }
 
   const { currentPassword, newPassword, csrfToken } = parsed.data;
 
@@ -49,7 +56,18 @@ export async function changePasswordAction(data: unknown) {
   if (csrfError) return csrfError;
 
   const isValid = await comparePassword(currentPassword, user.password);
-  if (!isValid) return formatError("Current Password is Incorrect");
+  if (!isValid) {
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.CHANGE_PASSWORD,
+      details: `Current password is incorrect`,
+      method: AuditLogMethod.PASSWORD,
+      success: false,
+      errorMessage: "Current password is incorrect",
+      at: new Date(),
+    });
+    return formatError("Current password is incorrect");
+  }
 
   try {
     const hashedNew = await hashPassword(newPassword);

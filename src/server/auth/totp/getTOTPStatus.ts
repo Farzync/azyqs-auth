@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/db";
 import { TokenPayload } from "@/types/token";
 import { formatError, getCookie, logError, verifyToken } from "@/lib/auth";
+import { createUserAuditLog } from "@/lib/auditLog";
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 
 /**
  * Get the TOTP (2FA) status for the authenticated user.
@@ -37,6 +39,22 @@ export async function getTOTPStatusAction() {
     };
   } catch (error) {
     logError("Get TOTP status", error);
+    try {
+      if (payload.id) {
+        await createUserAuditLog({
+          userId: payload.id,
+          action: AuditLogAction.GET_MFA_STATUS,
+          details: `Failed to get TOTP status`,
+          method: AuditLogMethod.MFA,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: new Date(),
+        });
+      }
+    } catch (auditError) {
+      logError("getTOTPStatusAction.audit", auditError);
+    }
     return formatError("Failed to get TOTP status");
   }
 }

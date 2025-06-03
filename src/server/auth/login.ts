@@ -48,7 +48,9 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
   const { username, password, recaptchaToken, csrfToken } = parsed.data;
 
   const csrfError = await requireValidCSRFToken(csrfToken);
-  if (csrfError) return csrfError;
+  if (csrfError) {
+    return csrfError;
+  }
 
   const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
   if (!isRecaptchaValid) {
@@ -114,6 +116,7 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
     }
   } catch (error) {
     logError("loginAction", error);
+    // No audit log, userId is not available
     return formatError("Login failed");
   }
 }

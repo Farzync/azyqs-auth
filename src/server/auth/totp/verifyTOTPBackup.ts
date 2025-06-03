@@ -15,6 +15,7 @@ import { validateCSRFToken } from "@/lib/auth/csrfToken";
 import { prisma } from "@/lib/db";
 import { backupCodeVerifySchema } from "@/lib/zod/schemas/backupCode.schema";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
+import { TokenPayload } from "@/types/token";
 
 /**
  * Verify a TOTP backup code for 2FA login and issue a session token if valid.
@@ -40,7 +41,31 @@ export async function verifyTOTPBackupAction(input: {
 }) {
   const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
   const tempUserId = await getCookie("temp_user_id");
+  let auditUserId = tempUserId;
   if (!tempUserId) {
+    // Try to get user id from token for audit log
+    const token = await getCookie("token");
+    let payloadId: string | undefined = undefined;
+    if (token) {
+      try {
+        const { id } = (await (
+          await import("@/lib/auth")
+        ).verifyToken(token)) as TokenPayload;
+        payloadId = id;
+      } catch {}
+    }
+    auditUserId = payloadId;
+    if (auditUserId) {
+      await createUserAuditLog({
+        userId: auditUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Attempted backup code login but session expired`,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: false,
+        errorMessage: "Session expired",
+        at: new Date(),
+      });
+    }
     return formatError("Session expired, please login again");
   }
 
@@ -48,6 +73,15 @@ export async function verifyTOTPBackupAction(input: {
   try {
     const parsed = backupCodeVerifySchema.safeParse(input);
     if (!parsed.success) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Backup code validation error`,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: false,
+        errorMessage: "Validation error",
+        at: timestamp,
+      });
       return formatError(
         "Validation error",
         parsed.error.flatten().fieldErrors
@@ -58,6 +92,16 @@ export async function verifyTOTPBackupAction(input: {
 
     const isCSRFValid = await validateCSRFToken(csrfToken);
     if (!isCSRFValid) {
+      // Audit log for CSRF error
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Invalid CSRF token during backup code login`,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: false,
+        errorMessage: "Invalid CSRF token",
+        at: timestamp,
+      });
       return formatError(
         "Invalid CSRF token. Please refresh the page and try again."
       );
@@ -124,15 +168,22 @@ export async function verifyTOTPBackupAction(input: {
     }
   } catch (error) {
     logError("Verify Backup Code", error);
-    await createUserAuditLog({
-      userId: tempUserId,
-      action: AuditLogAction.LOGIN,
-      details: `Failed login using backup code`,
-      method: AuditLogMethod.MFA_BACKUP,
-      success: false,
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
-      at: timestamp,
-    });
+    try {
+      if (tempUserId) {
+        await createUserAuditLog({
+          userId: tempUserId,
+          action: AuditLogAction.LOGIN,
+          details: `Failed login using backup code`,
+          method: AuditLogMethod.MFA_BACKUP,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      }
+    } catch (auditError) {
+      logError("verifyTOTPBackupAction.audit", auditError);
+    }
     return formatError("Failed to verify backup code");
   }
 }

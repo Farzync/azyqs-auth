@@ -115,20 +115,23 @@ export async function enableTOTPAction(input: z.infer<typeof totpSetupSchema>) {
     logError("Enable TOTP", error);
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: payload.id },
-        select: { username: true },
-      });
+      if (payload.id) {
+        const user = await prisma.user.findUnique({
+          where: { id: payload.id },
+          select: { username: true },
+        });
 
-      await createUserAuditLog({
-        userId: payload.id,
-        action: AuditLogAction.ENABLE_MFA,
-        details: `Failed to enable MFA for username: ${user?.username} - system error`,
-        method: AuditLogMethod.MFA,
-        success: false,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        at: timestamp,
-      });
+        await createUserAuditLog({
+          userId: payload.id,
+          action: AuditLogAction.ENABLE_MFA,
+          details: `Failed to enable MFA for username: ${user?.username} - system error`,
+          method: AuditLogMethod.MFA,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      }
     } catch (auditError) {
       logError("enableTOTPAction - audit log creation failed", auditError);
     }

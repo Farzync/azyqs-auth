@@ -6,6 +6,7 @@ export enum AuditLogAction {
   REGENERATE_BACKUP_CODE = "regenerate_backup_code",
   ENABLE_MFA = "enable_mfa",
   DISABLE_MFA = "disable_mfa",
+  GET_MFA_STATUS = "get_mfa_status",
   REGISTER_PASSKEY = "register_passkey",
   UNREGISTER_PASSKEY = "unregister_passkey",
   DELETE_ACCOUNT = "delete_account",

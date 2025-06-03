@@ -7,6 +7,7 @@ import {
   setCookie,
   deleteCookie,
   logError,
+  verifyToken,
 } from "@/lib/auth";
 import { validateCSRFToken } from "@/lib/auth/csrfToken";
 import { verifyTOTPCode } from "@/lib/auth/totp";
@@ -42,13 +43,45 @@ export async function verifyTOTPAction(input: {
   const tempUserId = await getCookie("temp_user_id");
   const timestamp = new Date();
 
+  let auditUserId = tempUserId;
   if (!tempUserId) {
+    const token = await getCookie("token");
+    let payloadId: string | undefined = undefined;
+    if (token) {
+      try {
+        const payload = await verifyToken(token);
+        if (payload && typeof payload === "object" && "id" in payload) {
+          payloadId = payload.id as string;
+        }
+      } catch {}
+    }
+    auditUserId = payloadId;
+    if (auditUserId) {
+      await createUserAuditLog({
+        userId: auditUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Attempted TOTP login but session expired`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: "Session expired",
+        at: timestamp,
+      });
+    }
     return formatError("Session expired, please login again");
   }
 
   try {
     const parsed = totpVerifySchema.safeParse(input);
     if (!parsed.success) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `TOTP validation error`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: "Validation error",
+        at: timestamp,
+      });
       return formatError(
         "Validation error",
         parsed.error.flatten().fieldErrors
@@ -59,6 +92,15 @@ export async function verifyTOTPAction(input: {
 
     const isCSRFValid = await validateCSRFToken(csrfToken);
     if (!isCSRFValid) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Invalid CSRF token during TOTP login`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: "Invalid CSRF token",
+        at: timestamp,
+      });
       return formatError(
         "Invalid CSRF token. Please refresh the page and try again."
       );
@@ -125,20 +167,23 @@ export async function verifyTOTPAction(input: {
     logError("Verify TOTP", error);
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: tempUserId },
-        select: { username: true },
-      });
+      if (tempUserId) {
+        const user = await prisma.user.findUnique({
+          where: { id: tempUserId },
+          select: { username: true },
+        });
 
-      await createUserAuditLog({
-        userId: tempUserId,
-        action: AuditLogAction.LOGIN,
-        details: `Failed MFA verification for username: ${user?.username}`,
-        method: AuditLogMethod.MFA,
-        success: false,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        at: timestamp,
-      });
+        await createUserAuditLog({
+          userId: tempUserId,
+          action: AuditLogAction.LOGIN,
+          details: `Failed MFA verification for username: ${user?.username}`,
+          method: AuditLogMethod.MFA,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      }
     } catch (auditError) {
       logError("verifyTOTPAction - audit log creation failed", auditError);
     }

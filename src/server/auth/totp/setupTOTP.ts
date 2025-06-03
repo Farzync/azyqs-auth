@@ -99,15 +99,22 @@ export async function setupTOTPAction() {
     };
   } catch (error) {
     logError("Setup TOTP", error);
-    await createUserAuditLog({
-      userId: payload.id,
-      action: AuditLogAction.ENABLE_MFA,
-      details: `Failed to setup TOTP`,
-      method: AuditLogMethod.MFA,
-      success: false,
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
-      at: timestamp,
-    });
+    try {
+      if (payload.id) {
+        await createUserAuditLog({
+          userId: payload.id,
+          action: AuditLogAction.ENABLE_MFA,
+          details: `Failed to setup TOTP`,
+          method: AuditLogMethod.MFA,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      }
+    } catch (auditError) {
+      logError("setupTOTPAction.audit", auditError);
+    }
     return formatError("Failed to setup TOTP");
   }
 }

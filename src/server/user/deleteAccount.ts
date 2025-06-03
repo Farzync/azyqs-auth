@@ -33,6 +33,7 @@ import { comparePassword } from "@/lib/auth/comparePassword";
 export async function deleteAccountAction(data: unknown) {
   const parsed = deleteAccountSchema.safeParse(data);
   if (!parsed.success) {
+    // No audit log, userId is not available
     return {
       error: "Validation error",
       issues: parsed.error.flatten().fieldErrors,
@@ -40,17 +41,45 @@ export async function deleteAccountAction(data: unknown) {
   }
 
   const token = await getCookie("token");
-  if (!token) return formatError("Unauthorized");
+  if (!token) {
+    // No audit log, userId is not available
+    return formatError("Unauthorized");
+  }
   const user = await getUserFromToken(token);
-  if (!user) return formatError("User not Found");
+  if (!user) {
+    // No audit log, userId is not available
+    return formatError("User not Found");
+  }
 
   const { password, csrfToken } = parsed.data;
 
   const csrfError = await requireValidCSRFToken(csrfToken);
-  if (csrfError) return csrfError;
+  if (csrfError) {
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.CHANGE_PASSWORD,
+      details: `CSRF validation failed`,
+      method: AuditLogMethod.PASSWORD,
+      success: false,
+      errorMessage: csrfError.error,
+      at: new Date(),
+    });
+    return formatError("CSRF validation failed");
+  }
 
   const isValid = await comparePassword(password, user.password);
-  if (!isValid) return formatError("Incorrect Password");
+  if (!isValid) {
+    await createUserAuditLog({
+      userId: user.id,
+      action: AuditLogAction.CHANGE_PASSWORD,
+      details: `Current password is incorrect`,
+      method: AuditLogMethod.PASSWORD,
+      success: false,
+      errorMessage: "Current password is incorrect",
+      at: new Date(),
+    });
+    return formatError("Current password is incorrect");
+  }
 
   try {
     await prisma.user.delete({ where: { id: user.id } });

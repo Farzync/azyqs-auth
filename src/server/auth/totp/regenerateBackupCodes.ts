@@ -63,15 +63,22 @@ export async function regenerateBackupCodesAction() {
     return { success: true, backupCodes };
   } catch (error) {
     logError("Regenerate Backup Codes", error);
-    await createUserAuditLog({
-      userId: payload.id,
-      action: AuditLogAction.REGENERATE_BACKUP_CODE,
-      details: `Failed to regenerate backup codes`,
-      method: AuditLogMethod.MFA_BACKUP,
-      success: false,
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
-      at: timestamp,
-    });
+    try {
+      if (payload.id) {
+        await createUserAuditLog({
+          userId: payload.id,
+          action: AuditLogAction.REGENERATE_BACKUP_CODE,
+          details: `Failed to regenerate backup codes`,
+          method: AuditLogMethod.MFA_BACKUP,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      }
+    } catch (auditError) {
+      logError("regenerateBackupCodesAction.audit", auditError);
+    }
     return formatError("Failed to regenerate backup codes");
   }
 }

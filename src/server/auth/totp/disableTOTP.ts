@@ -107,20 +107,23 @@ export async function disableTOTPAction(
     logError("Disable TOTP", error);
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: payload.id },
-        select: { username: true },
-      });
+      if (payload.id) {
+        const user = await prisma.user.findUnique({
+          where: { id: payload.id },
+          select: { username: true },
+        });
 
-      await createUserAuditLog({
-        userId: payload.id,
-        action: AuditLogAction.DISABLE_MFA,
-        details: `Failed to disable MFA for username: ${user?.username} - system error`,
-        method: AuditLogMethod.PASSWORD,
-        success: false,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        at: timestamp,
-      });
+        await createUserAuditLog({
+          userId: payload.id,
+          action: AuditLogAction.DISABLE_MFA,
+          details: `Failed to disable MFA for username: ${user?.username} - system error`,
+          method: AuditLogMethod.PASSWORD,
+          success: false,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          at: timestamp,
+        });
+      }
     } catch (auditError) {
       logError("disableTOTPAction - audit log creation failed", auditError);
     }
