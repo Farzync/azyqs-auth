@@ -25,7 +25,6 @@ import {
   AlertCircle,
   History,
   ChevronDown,
-  Filter,
 } from "lucide-react";
 import { getDeviceInfo as getDeviceInfoFromUA } from "@/utils/getDeviceInfo";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -218,7 +217,7 @@ export function ShowUserAuditLogDialog({
                   Security Activity
                 </DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Monitor your account's security events and login history
+                  Monitor your account&apos;s security events and login history
                 </DialogDescription>
               </div>
             </div>

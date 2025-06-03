@@ -25,7 +25,6 @@ import {
   EyeOff,
   Shield,
   AlertCircle,
-  Check,
   Loader2,
   Key,
 } from "lucide-react";

@@ -47,7 +47,7 @@ export function ShowAllPasskeysDialog({
       setPasskeys([]);
       setError(null);
     }
-  }, [open]);
+  }, [open, fetchPasskeys, hasFetched]);
 
   useEffect(() => {
     if (open && hasFetched && !deletingId) {
@@ -57,7 +57,7 @@ export function ShowAllPasskeysDialog({
         .catch((e) => setError(e?.message || "Failed to load passkeys"))
         .finally(() => setIsLoading(false));
     }
-  }, [deletingId, open]);
+  }, [deletingId, open, fetchPasskeys, hasFetched]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
