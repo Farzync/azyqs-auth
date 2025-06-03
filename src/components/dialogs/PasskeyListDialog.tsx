@@ -35,7 +35,7 @@ export function PasskeyList({
   };
 
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`space-y-3 ${className} hide-scrollbar`}>
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: skeletonCount }).map((_, i) => (
