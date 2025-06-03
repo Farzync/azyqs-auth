@@ -223,6 +223,12 @@ export function UpdateProfileDialog({
               className={isLoading ? "animate-pulse" : ""}
               disabled={isLoading}
               autoComplete="off"
+              onChange={(e) =>
+                setValue("username", e.target.value.toLowerCase(), {
+                  shouldValidate: true,
+                })
+              }
+              value={(watch("username") || "").toLowerCase()}
             />
             {errors.username?.message && (
               <p className="text-xs text-destructive flex items-center gap-1">

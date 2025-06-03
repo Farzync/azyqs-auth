@@ -268,6 +268,12 @@ export function LoginForm() {
                   isLoading || isPasskeyLoading ? "animate-pulse" : ""
                 }`}
                 disabled={isLoading || isPasskeyLoading}
+                onChange={(e) =>
+                  setValue("username", e.target.value.toLowerCase(), {
+                    shouldValidate: true,
+                  })
+                }
+                value={(watch("username") || "").toLowerCase()}
               />
             </div>
             {errors.username?.message && (
