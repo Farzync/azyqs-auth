@@ -47,8 +47,17 @@ export function ShowAllPasskeysDialog({
       setPasskeys([]);
       setError(null);
     }
-    // eslint-disable-next-line
   }, [open]);
+
+  useEffect(() => {
+    if (open && hasFetched && !deletingId) {
+      setIsLoading(true);
+      fetchPasskeys()
+        .then((result) => setPasskeys(result))
+        .catch((e) => setError(e?.message || "Failed to load passkeys"))
+        .finally(() => setIsLoading(false));
+    }
+  }, [deletingId, open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
