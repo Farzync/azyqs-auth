@@ -72,7 +72,6 @@ export function AuditLogSection() {
           </div>
         </div>
 
-        {/* Responsif dan serupa dengan tombol TOTP */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
             <Button
