@@ -24,41 +24,13 @@ import {
   KeyRound,
   AlertCircle,
   History,
+  ChevronDown,
+  Filter,
 } from "lucide-react";
 import { getDeviceInfo as getDeviceInfoFromUA } from "@/utils/getDeviceInfo";
 import { Skeleton } from "@/components/ui/skeleton";
-
-export enum AuditLogAction {
-  REGISTER = "register",
-  LOGIN = "login",
-  EDIT_PROFILE = "edit_profile",
-  CHANGE_PASSWORD = "change_password",
-  REGENERATE_BACKUP_CODE = "regenerate_backup_code",
-  ENABLE_MFA = "enable_mfa",
-  DISABLE_MFA = "disable_mfa",
-  REGISTER_PASSKEY = "register_passkey",
-  UNREGISTER_PASSKEY = "unregister_passkey",
-  DELETE_ACCOUNT = "delete_account",
-}
-
-export enum AuditLogMethod {
-  PASSWORD = "password",
-  PASSKEY = "passkey",
-  MFA_BACKUP = "mfa_backup",
-  MFA = "mfa",
-}
-
-export type AuditLogParams = {
-  userId: string;
-  action: AuditLogAction;
-  details?: string;
-  ipAddress: string;
-  userAgent?: string;
-  method?: AuditLogMethod;
-  success?: boolean;
-  errorMessage?: string;
-  at?: Date;
-};
+import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
+import { getRelativeTime } from "@/utils/formatters";
 
 type UserAuditLog = {
   id: string;
@@ -109,7 +81,7 @@ const getActionIcon = (action: AuditLogAction) => {
   }
 };
 
-const getActionDisplayName = (action: AuditLogAction) => {
+const getUserActionDisplayName = (action: AuditLogAction) => {
   const actionMap: Record<AuditLogAction, string> = {
     [AuditLogAction.LOGIN]: "Sign In",
     [AuditLogAction.REGISTER]: "Account Registration",
@@ -125,7 +97,7 @@ const getActionDisplayName = (action: AuditLogAction) => {
   return actionMap[action] || action;
 };
 
-const getMethodDisplayName = (method: AuditLogMethod) => {
+const getUserLoginMethodDisplayName = (method: AuditLogMethod) => {
   const methodMap: Record<AuditLogMethod, string> = {
     [AuditLogMethod.PASSWORD]: "Password",
     [AuditLogMethod.PASSKEY]: "Passkey",
@@ -135,27 +107,13 @@ const getMethodDisplayName = (method: AuditLogMethod) => {
   return methodMap[method] || method;
 };
 
-const getRelativeTime = (date: Date) => {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-};
-
-const getDeviceInfoString = (userAgent: string) => {
+const getUserDeviceInfoString = (userAgent: string) => {
   if (!userAgent) return "Unknown Device";
   const { deviceName, deviceOS } = getDeviceInfoFromUA();
   return `${deviceName} on ${deviceOS}`;
 };
 
-const getActionColor = (action: AuditLogAction, success?: boolean) => {
+const getUserActionColor = (action: AuditLogAction, success?: boolean) => {
   if (success === false) return "destructive";
 
   switch (action) {
@@ -188,6 +146,20 @@ export function ShowUserAuditLogDialog({
   );
   const [hasMore, setHasMore] = useState(true);
   const [hasFetched, setHasFetched] = useState(false);
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<"all" | "success" | "failed">(
+    "all"
+  );
+
+  const filteredLogs = logs.filter((log) => {
+    if (filterType === "success") return log.success === true;
+    if (filterType === "failed") return log.success === false;
+    return true;
+  });
+
+  const toggleLogExpansion = (logId: string) => {
+    setExpandedLog(expandedLog === logId ? null : logId);
+  };
 
   useEffect(() => {
     if (open && !hasFetched) {
@@ -211,6 +183,8 @@ export function ShowUserAuditLogDialog({
       setError(null);
       setNextCursor(null);
       setHasMore(true);
+      setExpandedLog(null);
+      setFilterType("all");
     }
   }, [open, hasFetched, fetchAuditLogs]);
 
@@ -232,193 +206,283 @@ export function ShowUserAuditLogDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <History className="h-6 w-6 text-primary" />
+      <DialogContent className="max-w-3xl w-full sm:w-[95vw] h-[90vh] sm:h-[85vh] flex flex-col p-0 rounded-2xl shadow-xl">
+        <DialogHeader className="flex-shrink-0 p-4 sm:p-6 pb-4 border-b bg-card">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted shadow">
+                <History className="h-6 w-6 text-foreground" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">
+                  Security Activity
+                </DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Monitor your account's security events and login history
+                </DialogDescription>
+              </div>
             </div>
-            Security Activity
-          </DialogTitle>
-          <DialogDescription className="text-base">
-            Monitor your account&apos;s security events and login history
-          </DialogDescription>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-1 p-1 bg-card rounded-lg border shadow-sm">
+                <button
+                  onClick={() => setFilterType("all")}
+                  className={`px-2 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    filterType === "all"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilterType("success")}
+                  className={`px-2 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    filterType === "success"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Success
+                </button>
+                <button
+                  onClick={() => setFilterType("failed")}
+                  className={`px-2 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    filterType === "failed"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Failed
+                </button>
+              </div>
+            </div>
+          </div>
         </DialogHeader>
-
         <div className="flex-1 min-h-0 overflow-hidden">
           {error ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="p-3 rounded-full bg-destructive/10 mb-4">
-                <AlertCircle className="h-8 w-8 text-destructive" />
+            <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8">
+              <div className="p-4 rounded-full bg-red-100 dark:bg-red-900/20 mb-4 sm:mb-6">
+                <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
               </div>
-              <h3 className="text-lg font-semibold text-destructive mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
                 Unable to Load Activity
               </h3>
-              <p className="text-sm text-muted-foreground text-center max-w-md">
+              <p className="text-xs sm:text-sm text-muted-foreground text-center max-w-md">
                 {error}
               </p>
             </div>
-          ) : logs.length === 0 && isLoading ? (
-            <div className="space-y-4 p-4 h-full hide-scrollbar">
+          ) : filteredLogs.length === 0 && isLoading ? (
+            <div className="space-y-3 p-4 sm:p-6 h-full overflow-y-auto hide-scrollbar">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-4 p-4 border rounded-xl bg-card/50"
+                  className="flex items-start gap-3 sm:gap-4 p-2 sm:p-4 border rounded-xl bg-card/50"
                 >
-                  <Skeleton className="h-12 w-12 rounded-xl flex-shrink-0" />
-                  <div className="flex-1 min-w-0 space-y-3">
+                  <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex-shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-2 sm:space-y-3">
                     <div className="space-y-2">
-                      <Skeleton className="h-5 w-40" />
-                      <Skeleton className="h-4 w-64" />
+                      <Skeleton className="h-4 sm:h-5 w-24 sm:w-40" />
+                      <Skeleton className="h-3 sm:h-4 w-32 sm:w-64" />
                     </div>
-                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-3 w-16 sm:w-32" />
                   </div>
                 </div>
               ))}
             </div>
-          ) : logs.length === 0 ? (
-            <div className="text-center h-full flex items-center justify-center">
+          ) : filteredLogs.length === 0 ? (
+            <div className="text-center h-full flex items-center justify-center p-6 sm:p-8">
               <div>
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/50 mb-6">
-                  <Shield className="h-10 w-10 text-muted-foreground" />
+                <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl bg-muted/50 mb-4 sm:mb-6">
+                  <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  No Security Activity
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
+                  {filterType === "all"
+                    ? "No Security Activity"
+                    : `No ${filterType} Activities`}
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                  Your security activity will appear here once you start using
-                  your account
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-xs sm:max-w-sm mx-auto">
+                  {filterType === "all"
+                    ? "Your security activity will appear here once you start using your account"
+                    : `No ${filterType} security activities found`}
                 </p>
               </div>
             </div>
           ) : (
             <div
-              className="h-full p-4 space-y-3 hide-scrollbar"
+              className="h-full p-2 sm:p-6 space-y-2 sm:space-y-3 overflow-y-auto hide-scrollbar"
               onScroll={handleScroll}
               tabIndex={0}
               role="list"
             >
-              {logs.map((log) => {
+              {filteredLogs.map((log) => {
                 const ActionIcon = getActionIcon(log.action);
-                const actionName = getActionDisplayName(log.action);
+                const actionName = getUserActionDisplayName(log.action);
                 const relativeTime = getRelativeTime(new Date(log.at));
-                const deviceInfo = getDeviceInfoString(log.userAgent || "");
-                const colorScheme = getActionColor(log.action, log.success);
+                const deviceInfo = getUserDeviceInfoString(log.userAgent || "");
+                const colorScheme = getUserActionColor(log.action, log.success);
+                const isExpanded = expandedLog === log.id;
 
                 return (
                   <div
                     key={log.id}
-                    className="group flex items-start gap-4 p-4 border rounded-xl bg-card/50 hover:bg-card transition-colors"
+                    className="group border rounded-xl bg-card/50 hover:bg-card transition-all duration-200 hover:shadow-md overflow-hidden hide-scrollbar"
                   >
-                    <div
-                      className={`flex items-center justify-center h-12 w-12 rounded-xl flex-shrink-0 ${
-                        log.success === false
-                          ? "bg-destructive/10 text-destructive"
-                          : colorScheme === "green"
-                          ? "bg-green-500/10 text-green-600"
-                          : colorScheme === "orange"
-                          ? "bg-orange-500/10 text-orange-600"
-                          : colorScheme === "blue"
-                          ? "bg-blue-500/10 text-blue-600"
-                          : "bg-primary/10 text-primary"
-                      }`}
-                    >
-                      <ActionIcon className="h-6 w-6" />
-                    </div>
-
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <h4 className="text-base font-semibold text-foreground truncate">
-                            {actionName}
-                          </h4>
-                          {log.success === false ? (
-                            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/10 flex-shrink-0">
-                              <XCircle className="h-3 w-3 text-destructive" />
-                              <span className="text-xs font-medium text-destructive">
-                                Failed
+                    <div className="flex flex-col sm:flex-row items-start gap-2 sm:gap-4 p-2 sm:p-4">
+                      <div
+                        className={`flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex-shrink-0 transition-colors ${
+                          log.success === false
+                            ? "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                            : colorScheme === "green"
+                            ? "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+                            : colorScheme === "orange"
+                            ? "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
+                            : colorScheme === "blue"
+                            ? "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                            : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                      >
+                        <ActionIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <h4 className="text-sm sm:text-base font-semibold text-foreground truncate">
+                              {actionName}
+                            </h4>
+                            <div
+                              className={`flex items-center gap-1 px-2 py-1 rounded-full flex-shrink-0 ${
+                                log.success === false
+                                  ? "bg-red-100 dark:bg-red-900/20"
+                                  : "bg-green-100 dark:bg-green-900/20"
+                              }`}
+                            >
+                              {log.success === false ? (
+                                <XCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                              ) : (
+                                <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
+                              )}
+                              <span
+                                className={`text-xs font-medium ${
+                                  log.success === false
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-green-600 dark:text-green-400"
+                                }`}
+                              >
+                                {log.success === false ? "Failed" : "Success"}
                               </span>
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 flex-shrink-0">
-                              <CheckCircle2 className="h-3 w-3 text-green-600" />
-                              <span className="text-xs font-medium text-green-600">
-                                Success
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+                              {relativeTime}
+                            </span>
+                            <button
+                              onClick={() => toggleLogExpansion(log.id)}
+                              className="p-1 rounded-md hover:bg-muted/50 transition-colors"
+                            >
+                              <ChevronDown
+                                className={`h-4 w-4 text-muted-foreground transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="sm:hidden mb-2">
+                          <span className="text-xs text-muted-foreground font-medium">
+                            {relativeTime}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          {log.method && (
+                            <div className="flex items-center gap-1 px-2 py-1 rounded bg-muted/50">
+                              <Key className="h-3 w-3" />
+                              <span className="font-medium">
+                                {getUserLoginMethodDisplayName(log.method)}
                               </span>
                             </div>
                           )}
-                        </div>
-                        <span className="text-xs text-muted-foreground font-medium flex-shrink-0">
-                          {relativeTime}
-                        </span>
-                      </div>
-
-                      {log.details && (
-                        <p className="text-sm text-muted-foreground leading-relaxed break-words">
-                          {log.details}
-                        </p>
-                      )}
-
-                      {log.errorMessage && (
-                        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                          <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-destructive break-words">
-                            {log.errorMessage}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        <span className="text-muted-foreground/80">
-                          {new Date(log.at).toLocaleString()}
-                        </span>
-
-                        {log.method && (
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-muted/50">
-                            <Key className="h-3 w-3" />
-                            <span className="font-medium">
-                              {getMethodDisplayName(log.method)}
-                            </span>
-                          </div>
-                        )}
-
-                        {log.ipAddress && (
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            <span>{log.ipAddress}</span>
-                          </div>
-                        )}
-
-                        {log.userAgent && (
-                          <div className="flex items-center gap-1">
-                            <Monitor className="h-3 w-3" />
-                            <span className="truncate max-w-xs">
-                              {deviceInfo}
+                            <span className="hidden sm:inline">
+                              {log.ipAddress}
+                            </span>
+                            <span className="sm:hidden">
+                              {log.ipAddress.split(".")[0]}...
+                              {log.ipAddress.split(".")[3]}
                             </span>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
+                    {isExpanded && (
+                      <div className="border-t bg-muted/20 p-3 sm:p-4 space-y-3">
+                        {log.details && (
+                          <div>
+                            <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                              Details
+                            </h5>
+                            <p className="text-sm text-foreground leading-relaxed">
+                              {log.details}
+                            </p>
+                          </div>
+                        )}
+                        {log.errorMessage && (
+                          <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
+                            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h5 className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wide mb-1">
+                                Error Message
+                              </h5>
+                              <p className="text-sm text-red-700 dark:text-red-300">
+                                {log.errorMessage}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                          <div>
+                            <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                              Timestamp
+                            </h5>
+                            <p className="text-sm text-foreground">
+                              {new Date(log.at).toLocaleString()}
+                            </p>
+                          </div>
+                          {log.userAgent && (
+                            <div>
+                              <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                                Device
+                              </h5>
+                              <div className="flex items-center gap-2">
+                                <Monitor className="h-3 w-3 text-muted-foreground" />
+                                <p className="text-sm text-foreground">
+                                  {deviceInfo}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
-
               {isLoading && (
-                <div className="flex justify-center py-6">
+                <div className="flex justify-center py-4 sm:py-6">
                   <div className="flex items-center gap-3">
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"></div>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       Loading more activity...
                     </span>
                   </div>
                 </div>
               )}
-
-              {!hasMore && logs.length > 0 && (
-                <div className="text-center py-6">
+              {!hasMore && filteredLogs.length > 0 && (
+                <div className="text-center py-4 sm:py-6">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50">
                     <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground font-medium">
+                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">
                       You&apos;ve reached the end
                     </span>
                   </div>
