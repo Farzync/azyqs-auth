@@ -14,7 +14,7 @@ import { User as UserIcon, Mail, AtSign, Calendar } from "lucide-react";
 import { useState } from "react";
 import { DeleteAccountDialog } from "@/components/dialogs/DeleteAccountDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
-import { AccountInfoSkeleton } from "@/components/elements/AccountInfoSkeleton";
+import { AccountInfoSkeleton } from "@/components/sections/account/AccountInfoSkeleton";
 
 interface AccountInfoProps {
   user?: User;
