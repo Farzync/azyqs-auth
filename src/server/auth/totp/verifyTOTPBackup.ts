@@ -127,7 +127,7 @@ export async function verifyTOTPBackupAction(input: {
     await createUserAuditLog({
       userId: tempUserId,
       action: AuditLogAction.LOGIN,
-      details: `Failed login using backup code (system error)`,
+      details: `Failed login using backup code`,
       method: AuditLogMethod.MFA_BACKUP,
       success: false,
       errorMessage: error instanceof Error ? error.message : "Unknown error",

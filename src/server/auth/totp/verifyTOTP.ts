@@ -92,7 +92,7 @@ export async function verifyTOTPAction(input: {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `Failed MFA verification for username: ${user?.username} - invalid TOTP code`,
+        details: `Failed login for username: ${user?.username} - incorrect TOTP code`,
         method: AuditLogMethod.MFA,
         success: false,
         errorMessage: "Invalid TOTP code",
@@ -133,7 +133,7 @@ export async function verifyTOTPAction(input: {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `Failed MFA verification for username: ${user?.username} - system error`,
+        details: `Failed MFA verification for username: ${user?.username}`,
         method: AuditLogMethod.MFA,
         success: false,
         errorMessage: error instanceof Error ? error.message : "Unknown error",

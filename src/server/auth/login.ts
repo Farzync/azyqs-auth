@@ -87,7 +87,7 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
       await createUserAuditLog({
         userId: user.id,
         action: AuditLogAction.LOGIN,
-        details: `Login successful for username: ${username} - MFA required`,
+        details: `Login successful for username: ${username} - Login pending MFA verification`,
         method: AuditLogMethod.PASSWORD,
         success: true,
         at: timestamp,
