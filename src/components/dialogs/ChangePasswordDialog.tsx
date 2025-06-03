@@ -37,7 +37,6 @@ type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 export function ChangePasswordDialog() {
   const [open, setOpen] = React.useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -81,7 +80,6 @@ export function ChangePasswordDialog() {
     if (!newOpen) {
       reset();
       setErrorMsg("");
-      setSuccess("");
       setCsrfToken("");
     }
     setOpen(newOpen);
@@ -89,7 +87,6 @@ export function ChangePasswordDialog() {
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
     setErrorMsg("");
-    setSuccess("");
     setIsLoading(true);
 
     if (!csrfToken) {
@@ -122,14 +119,9 @@ export function ChangePasswordDialog() {
           setErrorMsg(result.error);
         }
       } else {
-        setSuccess("Successfully changed password!");
         toast.success("Password changed successfully!");
         reset();
-
-        setTimeout(() => {
-          setOpen(false);
-          setSuccess("");
-        }, 2000);
+        setOpen(false);
       }
     } catch {
       const errorMessage = "A system error has occurred. Please try again.";
@@ -182,16 +174,6 @@ export function ChangePasswordDialog() {
           >
             <AlertCircle className="h-5 w-5 flex-shrink-0" />
             <span className="text-sm font-medium">{errorMsg}</span>
-          </div>
-        )}
-
-        {success && (
-          <div
-            role="alert"
-            className="flex items-center gap-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/30 text-green-700 dark:text-green-300 px-4 py-2 rounded-md mb-4 select-none animate-fadeIn"
-          >
-            <Check className="h-5 w-5 flex-shrink-0" />
-            <span className="text-sm font-medium">{success}</span>
           </div>
         )}
 
