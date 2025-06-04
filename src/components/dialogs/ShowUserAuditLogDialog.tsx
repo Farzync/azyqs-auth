@@ -87,10 +87,10 @@ const getUserActionDisplayName = (action: AuditLogAction) => {
     [AuditLogAction.EDIT_PROFILE]: "Profile Update",
     [AuditLogAction.CHANGE_PASSWORD]: "Password Change",
     [AuditLogAction.REGENERATE_BACKUP_CODE]: "Backup Code Regenerated",
-    [AuditLogAction.ENABLE_MFA]: "Two-Factor Authentication Enabled",
-    [AuditLogAction.DISABLE_MFA]: "Two-Factor Authentication Disabled",
+    [AuditLogAction.ENABLE_MFA]: "Multi-Factor Authentication Enabled",
+    [AuditLogAction.DISABLE_MFA]: "Multi-Factor Authentication Disabled",
     [AuditLogAction.GET_MFA_STATUS]:
-      "Two-Factor Authentication Status Retrieved",
+      "Multi-Factor Authentication Status Retrieved",
     [AuditLogAction.REGISTER_PASSKEY]: "Passkey Registered",
     [AuditLogAction.UNREGISTER_PASSKEY]: "Passkey Removed",
     [AuditLogAction.DELETE_ACCOUNT]: "Account Deletion",

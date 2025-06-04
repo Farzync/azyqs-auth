@@ -115,7 +115,7 @@ export function RegenerateBackupCodesDialog({
     const link = document.createElement("a");
     link.href = url;
     link.download = `${
-      user?.username?.toLowerCase() ?? "your-2fa"
+      user?.username?.toLowerCase() ?? "your-mfa"
     }-backup-codes-${new Date().toISOString().split("T")[0]}.txt`;
     document.body.appendChild(link);
     link.click();
@@ -156,7 +156,7 @@ export function RegenerateBackupCodesDialog({
           className="w-full flex items-center gap-2 justify-center"
         >
           <RefreshCcw className="h-4 w-4" />
-          Regenerate Backup Codes
+          Regenerate MFA Backup Codes
         </Button>
       </DialogTrigger>
 
@@ -168,10 +168,10 @@ export function RegenerateBackupCodesDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <RefreshCcw className="h-5 w-5" />
-            Create New Backup Codes
+            Create New MFA Backup Codes
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            This will generate a new set of backup codes. Old codes will be
+            This will generate a new set of MFA backup codes. Old codes will be
             invalidated.
           </DialogDescription>
         </DialogHeader>
@@ -244,7 +244,7 @@ export function RegenerateBackupCodesDialog({
               ) : (
                 <>
                   <Download className="h-4 w-4" />
-                  Download Backup Codes
+                  Download MFA Backup Codes
                 </>
               )}
             </Button>

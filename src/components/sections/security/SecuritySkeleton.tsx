@@ -35,7 +35,7 @@ export function SecuritySectionSkeleton() {
             </div>
           </div>
 
-          {/* TOTP Section Skeleton */}
+          {/* MFA Section Skeleton */}
           <div className="space-y-4 p-6 border border-border/50 rounded-xl bg-muted/20">
             <div className="flex justify-between items-start">
               <div className="space-y-2 flex-1">

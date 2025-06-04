@@ -21,7 +21,7 @@ import {
 import Link from "next/link";
 import { z } from "zod";
 import { useAuth } from "@/contexts/auth-context";
-import { TOTPVerifyForm } from "@/components/forms/TOTPVerifyForm";
+import { MFAVerifyForm } from "@/components/forms/MFAVerifyForm";
 import toast from "react-hot-toast";
 import { usePasskeyLogin } from "@/hooks/usePasskeyLogin";
 import { PasskeyLoginButton } from "@/components/forms/PasskeyLoginButton";
@@ -166,7 +166,7 @@ export function LoginForm() {
       } else if ("totp_required" in result && result.totp_required) {
         setShowTOTP(true);
         setLoginData(data);
-        toast.success("Two-factor authentication required");
+        toast.success("Multi-factor authentication required");
       } else {
         try {
           const userProfile = await getProfile();
@@ -219,7 +219,7 @@ export function LoginForm() {
 
   if (showTOTP && loginData) {
     return (
-      <TOTPVerifyForm
+      <MFAVerifyForm
         handleBackToLogin={handleBackToLogin}
         onSuccess={handleTOTPVerifySuccess}
       />

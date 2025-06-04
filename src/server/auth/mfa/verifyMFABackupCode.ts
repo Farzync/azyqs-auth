@@ -13,12 +13,12 @@ import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { verifyBackupCode } from "@/lib/auth/backupCodes";
 import { validateCSRFToken } from "@/lib/auth/csrfToken";
 import { prisma } from "@/lib/db";
-import { backupCodeVerifySchema } from "@/lib/zod/schemas/backupCode.schema";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { TokenPayload } from "@/types/token";
+import { mfaBackupCodeVerifySchema } from "@/lib/zod/schemas/mfa.schema";
 
 /**
- * Verify a TOTP backup code for 2FA login and issue a session token if valid.
+ * Verify a MFA backup code for 2FA login and issue a session token if valid.
  *
  * @param input {Object} - The input object containing backup code and CSRF token
  * @param input.code {string} - The backup code entered by the user
@@ -35,7 +35,7 @@ import { TokenPayload } from "@/types/token";
  * Example usage:
  * const result = await verifyTOTPBackupAction({ code, csrfToken });
  */
-export async function verifyTOTPBackupAction(input: {
+export async function verifyMFABackupAction(input: {
   code: string;
   csrfToken: string;
 }) {
@@ -71,7 +71,7 @@ export async function verifyTOTPBackupAction(input: {
 
   const timestamp = new Date();
   try {
-    const parsed = backupCodeVerifySchema.safeParse(input);
+    const parsed = mfaBackupCodeVerifySchema.safeParse(input);
     if (!parsed.success) {
       await createUserAuditLog({
         userId: tempUserId,
@@ -115,7 +115,7 @@ export async function verifyTOTPBackupAction(input: {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `Attempted backup code login but TOTP not enabled`,
+        details: `Attempted backup code login but MFA not enabled`,
         method: AuditLogMethod.MFA_BACKUP,
         success: false,
         errorMessage: "TOTP not enabled",

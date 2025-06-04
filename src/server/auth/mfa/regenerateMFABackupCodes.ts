@@ -38,7 +38,7 @@ export async function regenerateBackupCodesAction() {
       await createUserAuditLog({
         userId: payload.id,
         action: AuditLogAction.REGENERATE_BACKUP_CODE,
-        details: `Attempted to regenerate backup codes but TOTP is not enabled`,
+        details: `Attempted to regenerate backup codes but MFA is not enabled`,
         method: AuditLogMethod.MFA_BACKUP,
         success: false,
         errorMessage: "TOTP must be enabled to regenerate backup codes",

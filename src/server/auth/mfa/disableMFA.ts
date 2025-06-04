@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { totpDisableSchema } from "@/lib/zod/schemas/totp.schema";
+import { mfaDisableSchema } from "@/lib/zod/schemas/mfa.schema";
 import { z } from "zod";
 import { TokenPayload } from "@/types/token";
 import { formatError, verifyToken, logError, getCookie } from "@/lib/auth";
@@ -11,7 +11,7 @@ import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 
 /**
- * Disable TOTP (2FA) for the authenticated user after password and CSRF validation.
+ * Disable MFA (2FA) for the authenticated user after password and CSRF validation.
  *
  * @param input {z.infer<typeof totpDisableSchema>} - The input object with password and CSRF token
  * @returns {Promise<Object>} Success object or error message
@@ -19,17 +19,17 @@ import { createUserAuditLog } from "@/lib/auditLog";
  * Side effects:
  * - Validates CSRF token
  * - Checks password
- * - Disables TOTP in DB
+ * - Disables MFA in DB
  * - Creates audit log entry for MFA disablement
  * - Logs errors on failure
  *
  * Example usage:
  * const result = await disableTOTPAction({ password, csrfToken });
  */
-export async function disableTOTPAction(
-  input: z.infer<typeof totpDisableSchema>
+export async function disableMFAAction(
+  input: z.infer<typeof mfaDisableSchema>
 ) {
-  const parsed = totpDisableSchema.safeParse(input);
+  const parsed = mfaDisableSchema.safeParse(input);
   const timestamp = new Date();
 
   if (!parsed.success) {

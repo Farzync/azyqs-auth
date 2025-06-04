@@ -21,7 +21,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { totpSetupSchema } from "@/lib/zod/schemas/totp.schema";
+import { mfaSetupSchema } from "@/lib/zod/schemas/mfa.schema";
 import Image from "next/image";
 import {
   AlertCircle,
@@ -33,16 +33,18 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import toast from "react-hot-toast";
-import { enableTOTPAction, getCSRFToken, setupTOTPAction } from "@/server/auth";
+import { enableMFAAction, getCSRFToken, setupMFAAction } from "@/server/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface TOTPSetupDialogProps {
+interface MFASecuritySetupDialogProps {
   onSuccess: () => void;
 }
 
-type TOTPFormValues = z.infer<typeof totpSetupSchema>;
+type MFASecurityFormValues = z.infer<typeof mfaSetupSchema>;
 
-export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
+export function MFASecuritySetupDialog({
+  onSuccess,
+}: MFASecuritySetupDialogProps) {
   const { user, isLoading: userLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<"setup" | "verify" | "backup-codes">(
@@ -64,8 +66,8 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
     setError,
     setValue,
     clearErrors,
-  } = useForm<TOTPFormValues>({
-    resolver: zodResolver(totpSetupSchema),
+  } = useForm<MFASecurityFormValues>({
+    resolver: zodResolver(mfaSetupSchema),
     defaultValues: {
       code: "",
     },
@@ -107,7 +109,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
     setQrCode(null);
     setManualEntry(null);
     try {
-      const result = await setupTOTPAction();
+      const result = await setupMFAAction();
       if ("error" in result) {
         setErrorMsg(result.error);
       } else if ("success" in result && result.success) {
@@ -123,11 +125,11 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
     }
   };
 
-  const onSubmit = async (data: TOTPFormValues) => {
+  const onSubmit = async (data: MFASecurityFormValues) => {
     setIsLoading(true);
     setErrorMsg("");
     try {
-      const result = await enableTOTPAction(data);
+      const result = await enableMFAAction(data);
       if (Object.prototype.hasOwnProperty.call(result, "error")) {
         const error = (result as { error: string }).error;
         if (
@@ -294,7 +296,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
         setIsLoading(true);
         setErrorMsg("");
         try {
-          const result = await enableTOTPAction({ code: otpValue, csrfToken });
+          const result = await enableMFAAction({ code: otpValue, csrfToken });
           if (Object.prototype.hasOwnProperty.call(result, "error")) {
             const error = (result as { error: string }).error;
             if (
@@ -480,7 +482,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
                     htmlFor="otp-input"
                     className="text-sm font-medium text-foreground"
                   >
-                    Enter the 6-digit code from your app *
+                    Enter the 6-digit code from your MFA app *
                   </Label>
 
                   <div className="flex justify-center">
@@ -587,7 +589,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
             <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
               <p className="text-sm text-muted-foreground text-center">
                 Please save these backup codes in a safe place. Each code can
-                only be used once if you lose access to the authenticator app.
+                only be used once if you lose access to your MFA app.
                 <br />
                 <span className="font-semibold text-destructive">
                   Don&apos;t share the code with anyone!{" "}

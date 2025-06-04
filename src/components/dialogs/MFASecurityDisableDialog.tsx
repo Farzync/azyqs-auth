@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { totpDisableSchema } from "@/lib/zod/schemas/totp.schema";
+import { mfaDisableSchema } from "@/lib/zod/schemas/mfa.schema";
 import {
   ShieldOff,
   Lock,
@@ -26,15 +26,17 @@ import {
   Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { disableTOTPAction, getCSRFToken } from "@/server/auth";
+import { disableMFAAction, getCSRFToken } from "@/server/auth";
 
-interface TOTPDisableDialogProps {
+interface MFASecurityDisableDialogProps {
   onSuccess: () => void;
 }
 
-type TOTPDisableFormValues = z.infer<typeof totpDisableSchema>;
+type MFADisableFormValues = z.infer<typeof mfaDisableSchema>;
 
-export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
+export function MFASecurityDisableDialog({
+  onSuccess,
+}: MFASecurityDisableDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -49,8 +51,8 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
     watch,
     setValue,
     setError,
-  } = useForm<TOTPDisableFormValues>({
-    resolver: zodResolver(totpDisableSchema),
+  } = useForm<MFADisableFormValues>({
+    resolver: zodResolver(mfaDisableSchema),
     defaultValues: {
       password: "",
     },
@@ -85,7 +87,7 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
   const watchedValues = watch();
   const hasContent = watchedValues.password;
 
-  const onSubmit = async (data: TOTPDisableFormValues) => {
+  const onSubmit = async (data: MFADisableFormValues) => {
     if (!csrfToken) {
       setErrorMsg("CSRF token not found. Please close and reopen the dialog.");
       setIsLoading(false);
@@ -96,7 +98,7 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
     setErrorMsg("");
 
     try {
-      const result = await disableTOTPAction({
+      const result = await disableMFAAction({
         ...data,
         csrfToken,
       });
@@ -115,7 +117,7 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
           setErrorMsg(result.error);
         }
       } else if ("success" in result && result.success) {
-        toast.success("Two-factor authentication has been disabled.");
+        toast.success("Multi-factor authentication has been disabled.");
         onSuccess();
         handleClose();
       }
@@ -153,7 +155,7 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
           className="w-full flex items-center gap-2 justify-center"
         >
           <ShieldOff className="h-4 w-4" />
-          Disable 2FA
+          Disable MFA
         </Button>
       </DialogTrigger>
 
@@ -165,7 +167,7 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <ShieldOff className="h-5 w-5" />
-            Disable Two-Factor Authentication
+            Disable Multi-Factor Authentication
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             This will remove the extra security layer from your account.
@@ -246,12 +248,12 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Disabling 2FA...
+                  Disabling MFA...
                 </>
               ) : (
                 <>
                   <ShieldOff className="h-4 w-4" />
-                  Disable 2FA
+                  Disable MFA
                 </>
               )}
             </Button>

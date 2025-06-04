@@ -10,14 +10,14 @@ import {
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { Shield, AlertCircle } from "lucide-react";
-import { getTOTPStatusAction } from "@/server/auth";
+import { getMFAStatusAction } from "@/server/auth";
 import { getUserCredentialsAction } from "@/server/auth/webauthn/getUserCredentials";
 import type { Passkey } from "@/types/passkey";
 import { AuditLogSection } from "../sections/security/AuditLogSection";
 import { PasskeySection } from "../sections/security/PasskeySection";
 import { PasswordSection } from "../sections/security/PasswordSection";
 import { SecuritySectionSkeleton } from "../sections/security/SecuritySkeleton";
-import { TOTPSection } from "../sections/security/TotpSection";
+import { MFASection } from "../sections/security/MFASection";
 
 interface SecuritySectionProps {
   isLoading?: boolean;
@@ -26,28 +26,28 @@ interface SecuritySectionProps {
 export function SecuritySection({
   isLoading: propIsLoading = false,
 }: SecuritySectionProps) {
-  const [totpEnabled, setTotpEnabled] = useState(false);
-  const [isLoadingTOTP, setIsLoadingTOTP] = useState(true);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [isLoadingMFA, setIsLoadingMFA] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [isLoadingPasskey, setIsLoadingPasskey] = useState(true);
 
-  const fetchTOTPStatus = async () => {
-    setIsLoadingTOTP(true);
+  const fetchMFAStatus = async () => {
+    setIsLoadingMFA(true);
     setError(null);
 
     try {
-      const result = await getTOTPStatusAction();
+      const result = await getMFAStatusAction();
 
       if ("error" in result) {
         setError(result.error);
       } else if ("success" in result && result.success) {
-        setTotpEnabled(result.isEnabled);
+        setMfaEnabled(result.isEnabled);
       }
     } catch {
       setError("Failed to load security settings");
     } finally {
-      setIsLoadingTOTP(false);
+      setIsLoadingMFA(false);
     }
   };
 
@@ -81,13 +81,13 @@ export function SecuritySection({
 
   useEffect(() => {
     if (!propIsLoading) {
-      fetchTOTPStatus();
+      fetchMFAStatus();
       fetchPasskeys();
     }
   }, [propIsLoading]);
 
-  const handleTOTPChange = () => {
-    fetchTOTPStatus();
+  const handleMFAChange = () => {
+    fetchMFAStatus();
   };
 
   if (propIsLoading) {
@@ -122,10 +122,10 @@ export function SecuritySection({
 
           <PasswordSection />
 
-          <TOTPSection
-            totpEnabled={totpEnabled}
-            isLoading={isLoadingTOTP}
-            onTOTPChange={handleTOTPChange}
+          <MFASection
+            mfaEnabled={mfaEnabled}
+            isLoading={isLoadingMFA}
+            onMFAChange={handleMFAChange}
           />
 
           <PasskeySection

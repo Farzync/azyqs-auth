@@ -10,24 +10,24 @@ import {
   verifyToken,
 } from "@/lib/auth";
 import { validateCSRFToken } from "@/lib/auth/csrfToken";
-import { verifyTOTPCode } from "@/lib/auth/totp";
+import { verifyMFACode } from "@/lib/auth/mfa";
 import { prisma } from "@/lib/db";
-import { totpVerifySchema } from "@/lib/zod/schemas/totp.schema";
+import { mfaVerifySchema } from "@/lib/zod/schemas/mfa.schema";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 
 /**
- * Verify a TOTP code for 2FA login and issue a session token if valid.
+ * Verify a MFA code for 2FA login and issue a session token if valid.
  *
- * @param input {Object} - The input object containing TOTP code and CSRF token
- * @param input.code {string} - The TOTP code entered by the user
+ * @param input {Object} - The input object containing MFA code and CSRF token
+ * @param input.code {string} - The MFA code entered by the user
  * @param input.csrfToken {string} - The CSRF token for validation
  * @returns {Promise<Object>} Success object with session or error message
  *
  * Side effects:
  * - Validates CSRF token
- * - Checks TOTP code against stored secret
+ * - Checks MFA code against stored secret
  * - Issues JWT and sets cookie if valid
  * - Creates audit log entry for MFA verification
  * - Logs errors on failure
@@ -35,7 +35,7 @@ import { createUserAuditLog } from "@/lib/auditLog";
  * Example usage:
  * const result = await verifyTOTPAction({ code, csrfToken });
  */
-export async function verifyTOTPAction(input: {
+export async function verifyMFAAction(input: {
   code: string;
   csrfToken: string;
 }) {
@@ -60,7 +60,7 @@ export async function verifyTOTPAction(input: {
       await createUserAuditLog({
         userId: auditUserId,
         action: AuditLogAction.LOGIN,
-        details: `Attempted TOTP login but session expired`,
+        details: `Attempted MFA login but session expired`,
         method: AuditLogMethod.MFA,
         success: false,
         errorMessage: "Session expired",
@@ -71,7 +71,7 @@ export async function verifyTOTPAction(input: {
   }
 
   try {
-    const parsed = totpVerifySchema.safeParse(input);
+    const parsed = mfaVerifySchema.safeParse(input);
     if (!parsed.success) {
       await createUserAuditLog({
         userId: tempUserId,
@@ -95,7 +95,7 @@ export async function verifyTOTPAction(input: {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `Invalid CSRF token during TOTP login`,
+        details: `Invalid CSRF token during MFA login`,
         method: AuditLogMethod.MFA,
         success: false,
         errorMessage: "Invalid CSRF token",
@@ -119,7 +119,7 @@ export async function verifyTOTPAction(input: {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `Failed MFA verification for username: ${user?.username} - TOTP not enabled`,
+        details: `Failed MFA verification for username: ${user?.username} - MFA not enabled`,
         method: AuditLogMethod.MFA,
         success: false,
         errorMessage: "TOTP not enabled",
@@ -129,19 +129,19 @@ export async function verifyTOTPAction(input: {
       return formatError("TOTP not enabled");
     }
 
-    const isValid = verifyTOTPCode(code, userMfaCredential.secret);
+    const isValid = verifyMFACode(code, userMfaCredential.secret);
     if (!isValid) {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `Failed login for username: ${user?.username} - incorrect TOTP code`,
+        details: `Failed login for username: ${user?.username} - incorrect MFA code`,
         method: AuditLogMethod.MFA,
         success: false,
-        errorMessage: "Invalid TOTP code",
+        errorMessage: "Invalid MFA code",
         at: timestamp,
       });
 
-      return formatError("Invalid TOTP code");
+      return formatError("Invalid MFA code");
     }
 
     const token = await signToken({ id: tempUserId });

@@ -29,10 +29,10 @@ export const validationConfig = {
   csrf: {
     requiredMsg: "CSRF token is required",
   },
-  totp: {
+  mfa: {
     length: 6,
-    invalidMsg: "TOTP code must be 6 digits",
-    numberMsg: "TOTP code must contain only numbers",
+    invalidMsg: "MFA code must be 6 digits",
+    numberMsg: "MFA code must contain only numbers",
   },
   backupCode: {
     length: 8,

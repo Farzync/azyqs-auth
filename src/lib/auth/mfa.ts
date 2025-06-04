@@ -3,26 +3,26 @@
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 
-export interface TOTPSetup {
+export interface MFASetup {
   secret: string;
   qrCodeUrl: string;
   manualEntry: string;
 }
 
 /**
- * Generate a new TOTP secret for a user.
+ * Generate a new MFA secret for a user.
  *
  * @param userEmail {string} - The user's email address
  * @param appName {string} - The app name (issuer)
- * @returns {TOTPSetup} The TOTP secret, QR code URL, and manual entry string
+ * @returns {MFASetup} The MFA secret, QR code URL, and manual entry string
  *
  * Example usage:
- * const totp = generateTOTPSecret('user@email.com');
+ * const mfa = generateMFASecret('user@email.com');
  */
-export function generateTOTPSecret(
+export function generateMFASecret(
   userEmail: string,
   appName: string = "Azyqs Auth Web App"
-): TOTPSetup {
+): MFASetup {
   const secret = speakeasy.generateSecret({
     name: userEmail,
     issuer: appName,
@@ -37,15 +37,15 @@ export function generateTOTPSecret(
 }
 
 /**
- * Generate a QR code (as a data URL) for a TOTP otpauth URL.
+ * Generate a QR code (as a data URL) for an MFA otpauth URL.
  *
- * @param otpauthUrl {string} - The otpauth URL for TOTP
+ * @param otpauthUrl {string} - The otpauth URL for MFA
  * @returns {Promise<string>} The QR code as a data URL
  *
  * Example usage:
- * const qr = await generateQRCode(otpauthUrl);
+ * const qr = await generateMFAQRCode(otpauthUrl);
  */
-export async function generateQRCode(otpauthUrl: string): Promise<string> {
+export async function generateMFAQRCode(otpauthUrl: string): Promise<string> {
   try {
     return await QRCode.toDataURL(otpauthUrl);
   } catch {
@@ -54,16 +54,16 @@ export async function generateQRCode(otpauthUrl: string): Promise<string> {
 }
 
 /**
- * Verify a TOTP code against a secret.
+ * Verify an MFA code against a secret.
  *
- * @param token {string} - The TOTP code from the user
- * @param secret {string} - The TOTP secret (base32)
+ * @param token {string} - The MFA code from the user
+ * @param secret {string} - The MFA secret (base32)
  * @returns {boolean} True if the code is valid, false otherwise
  *
  * Example usage:
- * const isValid = verifyTOTPCode(code, secret);
+ * const isValid = verifyMFACode(code, secret);
  */
-export function verifyTOTPCode(token: string, secret: string): boolean {
+export function verifyMFACode(token: string, secret: string): boolean {
   return speakeasy.totp.verify({
     secret,
     encoding: "base32",

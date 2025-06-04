@@ -1,26 +1,26 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { totpSetupSchema } from "@/lib/zod/schemas/totp.schema";
+import { mfaSetupSchema } from "@/lib/zod/schemas/mfa.schema";
 import { z } from "zod";
 import { TokenPayload } from "@/types/token";
 import { formatError, getCookie, verifyToken, logError } from "@/lib/auth";
 import { generateBackupCodes, hashBackupCodes } from "@/lib/auth/backupCodes";
 import { validateCSRFToken } from "@/lib/auth/csrfToken";
-import { verifyTOTPCode } from "@/lib/auth/totp";
+import { verifyMFACode } from "@/lib/auth/mfa";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 
 /**
- * Enable TOTP (2FA) for the authenticated user after verifying code and CSRF.
+ * Enable MFA (2FA) for the authenticated user after verifying code and CSRF.
  *
- * @param input {z.infer<typeof totpSetupSchema>} - The input object with TOTP code and CSRF token
+ * @param input {z.infer<typeof totpSetupSchema>} - The input object with MFA code and CSRF token
  * @returns {Promise<Object>} Success object or error message
  *
  * Side effects:
  * - Validates CSRF token
- * - Verifies TOTP code
- * - Enables TOTP and generates backup codes
+ * - Verifies MFA code
+ * - Enables MFA and generates backup codes
  * - Updates user security settings in DB
  * - Creates audit log entry for MFA enablement
  * - Logs errors on failure
@@ -28,8 +28,8 @@ import { createUserAuditLog } from "@/lib/auditLog";
  * Example usage:
  * const result = await enableTOTPAction({ code, csrfToken });
  */
-export async function enableTOTPAction(input: z.infer<typeof totpSetupSchema>) {
-  const parsed = totpSetupSchema.safeParse(input);
+export async function enableMFAAction(input: z.infer<typeof mfaSetupSchema>) {
+  const parsed = mfaSetupSchema.safeParse(input);
   const timestamp = new Date();
 
   if (!parsed.success) {
@@ -68,7 +68,7 @@ export async function enableTOTPAction(input: z.infer<typeof totpSetupSchema>) {
       await createUserAuditLog({
         userId: payload.id,
         action: AuditLogAction.ENABLE_MFA,
-        details: `Failed to enable MFA for username: ${user?.username} - TOTP not setup`,
+        details: `Failed to enable MFA for username: ${user?.username} - MFA not setup`,
         method: AuditLogMethod.MFA,
         success: false,
         errorMessage: "TOTP not setup",
@@ -78,19 +78,19 @@ export async function enableTOTPAction(input: z.infer<typeof totpSetupSchema>) {
       return formatError("TOTP not setup");
     }
 
-    const isValid = verifyTOTPCode(code, userMfaCredential.secret);
+    const isValid = verifyMFACode(code, userMfaCredential.secret);
     if (!isValid) {
       await createUserAuditLog({
         userId: payload.id,
         action: AuditLogAction.ENABLE_MFA,
-        details: `Failed to enable MFA for username: ${user?.username} - invalid TOTP code`,
+        details: `Failed to enable MFA for username: ${user?.username} - invalid MFA code`,
         method: AuditLogMethod.MFA,
         success: false,
-        errorMessage: "Invalid TOTP code",
+        errorMessage: "Invalid MFA code",
         at: timestamp,
       });
 
-      return formatError("Invalid TOTP code");
+      return formatError("Invalid MFA code");
     }
 
     const backupCodes = generateBackupCodes();

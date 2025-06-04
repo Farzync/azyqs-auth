@@ -1,21 +1,21 @@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KeyRound } from "lucide-react";
-import { TOTPSetupDialog } from "@/components/dialogs/TOTPSetupDialog";
-import { TOTPDisableDialog } from "@/components/dialogs/TOTPDisableDialog";
+import { MFASecuritySetupDialog } from "@/components/dialogs/MFASecuritySetupDialog";
+import { MFASecurityDisableDialog } from "@/components/dialogs/MFASecurityDisableDialog";
 import { RegenerateBackupCodesDialog } from "@/components/dialogs/RegenerateBackupCodesDialog";
 
-interface TOTPSectionProps {
-  totpEnabled: boolean;
+export interface MFASectionProps {
+  mfaEnabled: boolean;
   isLoading: boolean;
-  onTOTPChange: () => void;
+  onMFAChange: () => void;
 }
 
-export function TOTPSection({
-  totpEnabled,
+export function MFASection({
+  mfaEnabled,
   isLoading,
-  onTOTPChange,
-}: TOTPSectionProps) {
+  onMFAChange,
+}: MFASectionProps) {
   return (
     <div className="space-y-4 p-6 border border-border/50 rounded-xl bg-muted/20 transition-colors hover:bg-muted/30">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
@@ -25,7 +25,7 @@ export function TOTPSection({
             Multi-Factor Authentication
           </h3>
           <p className="text-sm text-muted-foreground">
-            Add an extra layer of security to your account with TOTP
+            Add an extra layer of security to your account with MFA
           </p>
         </div>
         <div className="flex items-center gap-2 sm:ml-4">
@@ -34,14 +34,14 @@ export function TOTPSection({
             <Skeleton className="h-6 w-16 rounded-full" />
           ) : (
             <Badge
-              variant={totpEnabled ? "default" : "secondary"}
+              variant={mfaEnabled ? "default" : "secondary"}
               className={
-                totpEnabled
+                mfaEnabled
                   ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-                  : "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800"
+                  : "bg-yellow-100 text-yellow-800 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800"
               }
             >
-              {totpEnabled ? "Enabled" : "Disabled"}
+              {mfaEnabled ? "Enabled" : "Disabled"}
             </Badge>
           )}
         </div>
@@ -53,14 +53,14 @@ export function TOTPSection({
             <Skeleton className="h-10 rounded-lg" />
             <Skeleton className="h-10 rounded-lg" />
           </>
-        ) : totpEnabled ? (
+        ) : mfaEnabled ? (
           <>
-            <RegenerateBackupCodesDialog onSuccess={onTOTPChange} />
-            <TOTPDisableDialog onSuccess={onTOTPChange} />
+            <RegenerateBackupCodesDialog onSuccess={onMFAChange} />
+            <MFASecurityDisableDialog onSuccess={onMFAChange} />
           </>
         ) : (
           <div className="sm:col-span-2">
-            <TOTPSetupDialog onSuccess={onTOTPChange} />
+            <MFASecuritySetupDialog onSuccess={onMFAChange} />
           </div>
         )}
       </div>

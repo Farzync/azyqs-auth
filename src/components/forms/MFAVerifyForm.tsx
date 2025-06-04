@@ -13,34 +13,36 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { totpVerifySchema } from "@/lib/zod/schemas/totp.schema";
-import { backupCodeVerifySchema } from "@/lib/zod/schemas/backupCode.schema";
+import {
+  mfaBackupCodeVerifySchema,
+  mfaVerifySchema,
+} from "@/lib/zod/schemas/mfa.schema";
 import { AlertCircle, Loader2, Shield } from "lucide-react";
 import {
   getCSRFToken,
-  verifyTOTPAction,
-  verifyTOTPBackupAction,
+  verifyMFAAction,
+  verifyMFABackupAction,
 } from "@/server/auth";
 
-interface TOTPVerifyFormProps {
+interface MFAVerifyFormProps {
   onSuccess: () => void;
   handleBackToLogin: () => void;
 }
 
-const totpFormSchema = totpVerifySchema;
-const backupFormSchema = backupCodeVerifySchema;
+const mfaFormSchema = mfaVerifySchema;
+const backupFormSchema = mfaBackupCodeVerifySchema;
 
-export function TOTPVerifyForm({
+export function MFAVerifyForm({
   onSuccess,
   handleBackToLogin,
-}: TOTPVerifyFormProps) {
+}: MFAVerifyFormProps) {
   const [activeTab, setActiveTab] = useState<"totp" | "backup">("totp");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [csrfToken, setCsrfToken] = useState<string>("");
 
-  const totpForm = useForm<z.infer<typeof totpFormSchema>>({
-    resolver: zodResolver(totpFormSchema),
+  const mfaForm = useForm<z.infer<typeof mfaFormSchema>>({
+    resolver: zodResolver(mfaFormSchema),
     defaultValues: { code: "", csrfToken: "" },
   });
 
@@ -53,7 +55,7 @@ export function TOTPVerifyForm({
       try {
         const token = await getCSRFToken();
         setCsrfToken(token);
-        totpForm.setValue("csrfToken", token);
+        mfaForm.setValue("csrfToken", token);
         backupForm.setValue("csrfToken", token);
       } catch {
         const error = "Failed to get CSRF token. Refresh the page.";
@@ -61,9 +63,9 @@ export function TOTPVerifyForm({
       }
     }
     fetchCsrfToken();
-  }, [totpForm, backupForm]);
+  }, [mfaForm, backupForm]);
 
-  const onSubmitTOTP = async (data: z.infer<typeof totpFormSchema>) => {
+  const onSubmitMFA = async (data: z.infer<typeof mfaFormSchema>) => {
     setIsLoading(true);
     setErrorMsg("");
 
@@ -75,13 +77,13 @@ export function TOTPVerifyForm({
     }
 
     try {
-      const result = await verifyTOTPAction({
+      const result = await verifyMFAAction({
         code: data.code,
         csrfToken,
       });
 
       if ("error" in result) {
-        totpForm.setError("code", {
+        mfaForm.setError("code", {
           type: "manual",
           message: result.error,
         });
@@ -108,7 +110,7 @@ export function TOTPVerifyForm({
     }
 
     try {
-      const result = await verifyTOTPBackupAction({
+      const result = await verifyMFABackupAction({
         code: data.code,
         csrfToken,
       });
@@ -131,16 +133,16 @@ export function TOTPVerifyForm({
 
   const handleTOTPChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, "");
-    totpForm.setValue("code", numericValue);
+    mfaForm.setValue("code", numericValue);
 
-    if (totpForm.formState.errors.code) {
-      totpForm.clearErrors("code");
+    if (mfaForm.formState.errors.code) {
+      mfaForm.clearErrors("code");
     }
     if (errorMsg) setErrorMsg("");
 
     if (numericValue.length === 6) {
       setTimeout(() => {
-        totpForm.handleSubmit(onSubmitTOTP)();
+        mfaForm.handleSubmit(onSubmitMFA)();
       }, 100);
     }
   };
@@ -158,7 +160,7 @@ export function TOTPVerifyForm({
   const handleTabChange = (value: string) => {
     setActiveTab(value as "totp" | "backup");
     setErrorMsg("");
-    totpForm.reset({ code: "", csrfToken });
+    mfaForm.reset({ code: "", csrfToken });
     backupForm.reset({ code: "", csrfToken });
   };
 
@@ -181,7 +183,7 @@ export function TOTPVerifyForm({
 
         <div className="p-8 bg-card border border-border rounded-3xl shadow-xl backdrop-blur-sm transition-all">
           <h2 className="text-2xl font-bold mb-6 text-foreground">
-            Two-Factor Authentication
+            Multi-Factor Authentication
           </h2>
 
           <Tabs
@@ -190,19 +192,19 @@ export function TOTPVerifyForm({
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="totp">Authenticator Code</TabsTrigger>
+              <TabsTrigger value="mfa">MFA Code</TabsTrigger>
               <TabsTrigger value="backup">Backup Code</TabsTrigger>
             </TabsList>
 
             <TabsContent value="totp">
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Enter the 6-digit code from your authenticator app.
+                  Enter the 6-digit code from your MFA app.
                 </p>
               </div>
 
               <form
-                onSubmit={totpForm.handleSubmit(onSubmitTOTP)}
+                onSubmit={mfaForm.handleSubmit(onSubmitMFA)}
                 className="space-y-6"
               >
                 <div className="space-y-2">
@@ -210,13 +212,13 @@ export function TOTPVerifyForm({
                     htmlFor="totp-input"
                     className="text-sm font-medium text-foreground"
                   >
-                    Authentication Code *
+                    MFA Code *
                   </Label>
 
                   <div className="flex justify-center">
                     <InputOTP
                       maxLength={6}
-                      value={totpForm.watch("code") || ""}
+                      value={mfaForm.watch("code") || ""}
                       onChange={handleTOTPChange}
                       disabled={isLoading}
                       autoFocus
@@ -226,7 +228,7 @@ export function TOTPVerifyForm({
                         <InputOTPSlot
                           index={0}
                           className={`${isLoading ? "animate-pulse" : ""} ${
-                            totpForm.formState.errors.code
+                            mfaForm.formState.errors.code
                               ? "border-destructive"
                               : ""
                           }`}
@@ -236,7 +238,7 @@ export function TOTPVerifyForm({
                         <InputOTPSlot
                           index={1}
                           className={`${isLoading ? "animate-pulse" : ""} ${
-                            totpForm.formState.errors.code
+                            mfaForm.formState.errors.code
                               ? "border-destructive"
                               : ""
                           }`}
@@ -246,7 +248,7 @@ export function TOTPVerifyForm({
                         <InputOTPSlot
                           index={2}
                           className={`${isLoading ? "animate-pulse" : ""} ${
-                            totpForm.formState.errors.code
+                            mfaForm.formState.errors.code
                               ? "border-destructive"
                               : ""
                           }`}
@@ -256,7 +258,7 @@ export function TOTPVerifyForm({
                         <InputOTPSlot
                           index={3}
                           className={`${isLoading ? "animate-pulse" : ""} ${
-                            totpForm.formState.errors.code
+                            mfaForm.formState.errors.code
                               ? "border-destructive"
                               : ""
                           }`}
@@ -266,7 +268,7 @@ export function TOTPVerifyForm({
                         <InputOTPSlot
                           index={4}
                           className={`${isLoading ? "animate-pulse" : ""} ${
-                            totpForm.formState.errors.code
+                            mfaForm.formState.errors.code
                               ? "border-destructive"
                               : ""
                           }`}
@@ -276,7 +278,7 @@ export function TOTPVerifyForm({
                         <InputOTPSlot
                           index={5}
                           className={`${isLoading ? "animate-pulse" : ""} ${
-                            totpForm.formState.errors.code
+                            mfaForm.formState.errors.code
                               ? "border-destructive"
                               : ""
                           }`}
@@ -285,10 +287,10 @@ export function TOTPVerifyForm({
                     </InputOTP>
                   </div>
 
-                  {totpForm.formState.errors.code && (
+                  {mfaForm.formState.errors.code && (
                     <p className="text-xs text-destructive flex items-center justify-center gap-1">
                       <AlertCircle className="h-3 w-3" />
-                      {totpForm.formState.errors.code.message}
+                      {mfaForm.formState.errors.code.message}
                     </p>
                   )}
 
@@ -302,7 +304,7 @@ export function TOTPVerifyForm({
                   type="submit"
                   disabled={
                     isLoading ||
-                    (totpForm.watch("code")?.length || 0) < 6 ||
+                    (mfaForm.watch("code")?.length || 0) < 6 ||
                     !csrfToken
                   }
                   className="w-full flex items-center gap-2"

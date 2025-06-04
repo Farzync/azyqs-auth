@@ -7,7 +7,7 @@ import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 
 /**
- * Get the TOTP (2FA) status for the authenticated user.
+ * Get the MFA (2FA) status for the authenticated user.
  *
  * @returns {Promise<Object>} Object with isEnabled boolean or error message
  *
@@ -16,9 +16,9 @@ import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
  * - Logs errors on failure
  *
  * Example usage:
- * const status = await getTOTPStatusAction();
+ * const status = await getMFAStatusAction();
  */
-export async function getTOTPStatusAction() {
+export async function getMFAStatusAction() {
   const token = await getCookie("token");
   if (!token) {
     return formatError("Not authenticated");
@@ -38,13 +38,13 @@ export async function getTOTPStatusAction() {
       isEnabled: userMfaCredential?.isEnabled || false,
     };
   } catch (error) {
-    logError("Get TOTP status", error);
+    logError("Get MFA status", error);
     try {
       if (payload.id) {
         await createUserAuditLog({
           userId: payload.id,
           action: AuditLogAction.GET_MFA_STATUS,
-          details: `Failed to get TOTP status`,
+          details: `Failed to get MFA status`,
           method: AuditLogMethod.MFA,
           success: false,
           errorMessage:
@@ -55,6 +55,6 @@ export async function getTOTPStatusAction() {
     } catch (auditError) {
       logError("getTOTPStatusAction.audit", auditError);
     }
-    return formatError("Failed to get TOTP status");
+    return formatError("Failed to get MFA status");
   }
 }
