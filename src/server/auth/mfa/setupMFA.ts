@@ -86,7 +86,7 @@ export async function setupMFAAction() {
     await createUserAuditLog({
       userId: user.id,
       action: AuditLogAction.ENABLE_MFA,
-      details: `TOTP setup (secret generated) for username: ${user.username}`,
+      details: `MFA setup (secret generated) for username: ${user.username}`,
       method: AuditLogMethod.MFA,
       success: true,
       at: timestamp,
@@ -98,13 +98,13 @@ export async function setupMFAAction() {
       manualEntry: mfaSetup.manualEntry,
     };
   } catch (error) {
-    logError("Setup TOTP", error);
+    logError("Setup MFA", error);
     try {
       if (payload.id) {
         await createUserAuditLog({
           userId: payload.id,
           action: AuditLogAction.ENABLE_MFA,
-          details: `Failed to setup TOTP`,
+          details: `Failed to setup MFA`,
           method: AuditLogMethod.MFA,
           success: false,
           errorMessage:
@@ -115,6 +115,6 @@ export async function setupMFAAction() {
     } catch (auditError) {
       logError("setupTOTPAction.audit", auditError);
     }
-    return formatError("Failed to setup TOTP");
+    return formatError("Failed to setup MFA");
   }
 }

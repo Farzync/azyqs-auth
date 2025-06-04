@@ -13,7 +13,7 @@ import { createUserAuditLog } from "@/lib/auditLog";
 /**
  * Disable MFA (2FA) for the authenticated user after password and CSRF validation.
  *
- * @param input {z.infer<typeof totpDisableSchema>} - The input object with password and CSRF token
+ * @param input {z.infer<typeof mfaDisableSchema>} - The input object with password and CSRF token
  * @returns {Promise<Object>} Success object or error message
  *
  * Side effects:
@@ -104,7 +104,7 @@ export async function disableMFAAction(
 
     return { success: true };
   } catch (error) {
-    logError("Disable TOTP", error);
+    logError("Disable MFA", error);
 
     try {
       if (payload.id) {
@@ -128,6 +128,6 @@ export async function disableMFAAction(
       logError("disableTOTPAction - audit log creation failed", auditError);
     }
 
-    return formatError("Failed to disable TOTP");
+    return formatError("Failed to disable MFA");
   }
 }

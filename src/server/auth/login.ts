@@ -72,7 +72,7 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
       await createUserAuditLog({
         userId: user.id,
         action: AuditLogAction.LOGIN,
-        details: `Failed login attempt for username: ${username} - incorrect password`,
+        details: `Failed login attempt for username: ${username}`,
         method: AuditLogMethod.PASSWORD,
         success: false,
         errorMessage: "Incorrect password",
@@ -98,7 +98,7 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
       await setCookie("temp_user_id", user.id, { maxAge: 300 });
       return {
         success: true,
-        totp_required: true,
+        mfa_required: true,
       };
     } else {
       await createUserAuditLog({
@@ -116,7 +116,6 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
     }
   } catch (error) {
     logError("loginAction", error);
-    // No audit log, userId is not available
     return formatError("Login failed");
   }
 }

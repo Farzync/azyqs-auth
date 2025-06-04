@@ -76,7 +76,7 @@ export async function verifyMFAAction(input: {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `TOTP validation error`,
+        details: `MFA validation error`,
         method: AuditLogMethod.MFA,
         success: false,
         errorMessage: "Validation error",
@@ -119,14 +119,14 @@ export async function verifyMFAAction(input: {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
-        details: `Failed MFA verification for username: ${user?.username} - MFA not enabled`,
+        details: `Failed MFA verification for username: ${user?.username}`,
         method: AuditLogMethod.MFA,
         success: false,
-        errorMessage: "TOTP not enabled",
+        errorMessage: "MFA not enabled",
         at: timestamp,
       });
 
-      return formatError("TOTP not enabled");
+      return formatError("MFA not enabled");
     }
 
     const isValid = verifyMFACode(code, userMfaCredential.secret);
@@ -164,7 +164,7 @@ export async function verifyMFAAction(input: {
 
     return { success: true };
   } catch (error) {
-    logError("Verify TOTP", error);
+    logError("Verify MFA", error);
 
     try {
       if (tempUserId) {
@@ -188,6 +188,6 @@ export async function verifyMFAAction(input: {
       logError("verifyTOTPAction - audit log creation failed", auditError);
     }
 
-    return formatError("Failed to verify TOTP");
+    return formatError("Failed to verify MFA");
   }
 }

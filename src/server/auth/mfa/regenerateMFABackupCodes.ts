@@ -8,7 +8,7 @@ import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 
 /**
- * Regenerate backup codes for the authenticated user (TOTP must be enabled).
+ * Regenerate backup codes for the authenticated user (MFA must be enabled).
  *
  * @returns {Promise<Object>} Object with new backup codes or error message
  *
@@ -41,10 +41,10 @@ export async function regenerateBackupCodesAction() {
         details: `Attempted to regenerate backup codes but MFA is not enabled`,
         method: AuditLogMethod.MFA_BACKUP,
         success: false,
-        errorMessage: "TOTP must be enabled to regenerate backup codes",
+        errorMessage: "MFA must be enabled to regenerate backup codes",
         at: timestamp,
       });
-      return formatError("TOTP must be enabled to regenerate backup codes");
+      return formatError("MFA must be enabled to regenerate backup codes");
     }
     const backupCodes = generateBackupCodes();
     const hashedBackupCodes = await hashBackupCodes(backupCodes);

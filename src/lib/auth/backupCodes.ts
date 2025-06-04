@@ -12,7 +12,7 @@ function getRandomChar(): string {
 }
 
 /**
- * Generate an array of random backup codes for TOTP.
+ * Generate an array of random backup codes for MFA.
  * Each code is 8 uppercase alphanumeric characters (A-Z, 0-9).
  *
  * @param count {number} - Number of codes to generate (default 8)

@@ -14,7 +14,7 @@ import { createUserAuditLog } from "@/lib/auditLog";
 /**
  * Enable MFA (2FA) for the authenticated user after verifying code and CSRF.
  *
- * @param input {z.infer<typeof totpSetupSchema>} - The input object with MFA code and CSRF token
+ * @param input {z.infer<typeof mfaSetupSchema>} - The input object with MFA code and CSRF token
  * @returns {Promise<Object>} Success object or error message
  *
  * Side effects:
@@ -71,11 +71,11 @@ export async function enableMFAAction(input: z.infer<typeof mfaSetupSchema>) {
         details: `Failed to enable MFA for username: ${user?.username} - MFA not setup`,
         method: AuditLogMethod.MFA,
         success: false,
-        errorMessage: "TOTP not setup",
+        errorMessage: "MFA not setup",
         at: timestamp,
       });
 
-      return formatError("TOTP not setup");
+      return formatError("MFA not setup");
     }
 
     const isValid = verifyMFACode(code, userMfaCredential.secret);
@@ -112,7 +112,7 @@ export async function enableMFAAction(input: z.infer<typeof mfaSetupSchema>) {
 
     return { success: true, backupCodes };
   } catch (error) {
-    logError("Enable TOTP", error);
+    logError("Enable MFA", error);
 
     try {
       if (payload.id) {
@@ -136,6 +136,6 @@ export async function enableMFAAction(input: z.infer<typeof mfaSetupSchema>) {
       logError("enableTOTPAction - audit log creation failed", auditError);
     }
 
-    return formatError("Failed to enable TOTP");
+    return formatError("Failed to enable MFA");
   }
 }

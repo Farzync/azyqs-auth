@@ -60,7 +60,7 @@ export function LoginForm() {
     handlePasskeyLogin,
   } = usePasskeyLogin(setUser);
 
-  const loginViaTOTP = useRef(false);
+  const loginViaMFA = useRef(false);
 
   const {
     recaptchaRef,
@@ -163,7 +163,7 @@ export function LoginForm() {
         } else {
           setErrorMsg(result.error);
         }
-      } else if ("totp_required" in result && result.totp_required) {
+      } else if ("mfa_required" in result && result.mfa_required) {
         setShowTOTP(true);
         setLoginData(data);
         toast.success("Multi-factor authentication required");
@@ -172,7 +172,7 @@ export function LoginForm() {
           const userProfile = await getProfile();
           setUser(userProfile);
 
-          if (!loginViaTOTP.current) {
+          if (!loginViaMFA.current) {
             toast.success("Login successful!");
           }
 
@@ -194,7 +194,7 @@ export function LoginForm() {
   };
 
   const handleTOTPVerifySuccess = async () => {
-    loginViaTOTP.current = true;
+    loginViaMFA.current = true;
     try {
       const userProfile = await getProfile();
       setUser(userProfile);
@@ -204,7 +204,7 @@ export function LoginForm() {
         router.push("/");
       }, 1000);
     } catch (error) {
-      console.error("Profile fetch error after TOTP:", error);
+      console.error("Profile fetch error after MFA:", error);
       setErrorMsg("Failed to load user profile after verification.");
     }
   };
@@ -212,7 +212,7 @@ export function LoginForm() {
   const handleBackToLogin = () => {
     setShowTOTP(false);
     setLoginData(null);
-    loginViaTOTP.current = false;
+    loginViaMFA.current = false;
     resetRecaptcha();
     setErrorMsg("");
   };

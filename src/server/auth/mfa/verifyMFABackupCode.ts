@@ -43,7 +43,6 @@ export async function verifyMFABackupAction(input: {
   const tempUserId = await getCookie("temp_user_id");
   let auditUserId = tempUserId;
   if (!tempUserId) {
-    // Try to get user id from token for audit log
     const token = await getCookie("token");
     let payloadId: string | undefined = undefined;
     if (token) {
@@ -118,10 +117,10 @@ export async function verifyMFABackupAction(input: {
         details: `Attempted backup code login but MFA not enabled`,
         method: AuditLogMethod.MFA_BACKUP,
         success: false,
-        errorMessage: "TOTP not enabled",
+        errorMessage: "MFA not enabled",
         at: timestamp,
       });
-      return formatError("TOTP not enabled");
+      return formatError("MFA not enabled");
     }
 
     const idx = await verifyBackupCode(

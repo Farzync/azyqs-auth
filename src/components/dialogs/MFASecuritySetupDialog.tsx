@@ -415,7 +415,7 @@ export function MFASecuritySetupDialog({
                     {qrCode ? (
                       <Image
                         src={qrCode}
-                        alt="TOTP QR Code"
+                        alt="MFA QR Code"
                         width={192}
                         height={192}
                         className="w-48 h-48 animate-in fade-in-0 zoom-in-95 duration-300"
