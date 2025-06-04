@@ -37,8 +37,8 @@ export function MFASection({
               variant={mfaEnabled ? "default" : "secondary"}
               className={
                 mfaEnabled
-                  ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-                  : "bg-yellow-100 text-yellow-800 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800"
+                  ? "bg-green-600 text-white border-green-700 dark:bg-green-500 dark:text-black dark:border-green-600"
+                  : "bg-yellow-500 text-black border-yellow-600 dark:bg-yellow-400 dark:text-black dark:border-yellow-500"
               }
             >
               {mfaEnabled ? "Enabled" : "Disabled"}
