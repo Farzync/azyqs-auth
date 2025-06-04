@@ -1,3 +1,13 @@
 {
-  "npm.packageManager": "pnpm"
+  "npm.packageManager": "pnpm",
+  "eslint.useFlatConfig": true,
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+    "javascriptreact",
+    "typescriptreact"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always"
+  }
 }
