@@ -106,8 +106,6 @@ export async function verifyAuthenticationAction(
     const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
     const token = await signToken({
       id: credential.user.id,
-      username: credential.user.username,
-      email: credential.user.email,
     });
 
     await setCookie("token", token, {
