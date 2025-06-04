@@ -22,7 +22,7 @@ export function TOTPSection({
         <div className="space-y-2 flex-1">
           <h3 className="font-semibold text-foreground flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-muted-foreground" />
-            Two-Factor Authentication
+            Multi-Factor Authentication
           </h3>
           <p className="text-sm text-muted-foreground">
             Add an extra layer of security to your account with TOTP

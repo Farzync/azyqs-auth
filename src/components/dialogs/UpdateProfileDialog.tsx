@@ -88,7 +88,19 @@ export function UpdateProfileDialog({
     fetchCsrfToken();
   }, [open, setValue]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (isLoading && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [isLoading]);
+
   const handleOpenChange = (newOpen: boolean) => {
+    if (isLoading) return;
     if (!newOpen) {
       reset({
         name: user.name,

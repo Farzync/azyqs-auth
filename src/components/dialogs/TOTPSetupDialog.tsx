@@ -23,10 +23,18 @@ import {
 } from "@/components/ui/input-otp";
 import { totpSetupSchema } from "@/lib/zod/schemas/totp.schema";
 import Image from "next/image";
-import { AlertCircle, Loader2, Shield, Download } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Shield,
+  Download,
+  Copy,
+  Check,
+} from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import toast from "react-hot-toast";
 import { enableTOTPAction, getCSRFToken, setupTOTPAction } from "@/server/auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TOTPSetupDialogProps {
   onSuccess: () => void;
@@ -47,6 +55,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
   const [otpValue, setOtpValue] = useState("");
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [csrfToken, setCsrfToken] = useState<string>("");
+  const [copied, setCopied] = useState(false);
 
   const {
     handleSubmit,
@@ -61,6 +70,20 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
       code: "",
     },
   });
+
+  // Consider "locked" if not on initial setup step
+  const isProcessActive = isLoading || step !== "setup";
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (isProcessActive && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [isProcessActive]);
 
   useEffect(() => {
     async function fetchCsrfToken() {
@@ -78,8 +101,11 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
   }, [isOpen, setValue]);
 
   const handleSetup = async () => {
+    setStep("verify"); // langsung ke verify
     setIsLoading(true);
     setErrorMsg("");
+    setQrCode(null);
+    setManualEntry(null);
     try {
       const result = await setupTOTPAction();
       if ("error" in result) {
@@ -87,8 +113,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
       } else if ("success" in result && result.success) {
         setQrCode(result.qrCode);
         setManualEntry(result.manualEntry);
-        setStep("verify");
-        toast.success("2FA setup initiated. Please verify your code.");
+        toast.success("MFA setup initiated. Please verify your code.");
       }
     } catch {
       const errorMessage = "A system error has occurred. Please try again.";
@@ -123,7 +148,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
       ) {
         setBackupCodes((result as { backupCodes: string[] }).backupCodes || []);
         setStep("backup-codes");
-        toast.success("2FA code verified. Save your backup codes!");
+        toast.success("MFA code verified. Save your backup codes!");
       }
     } catch {
       const errorMessage = "A system error has occurred. Please try again.";
@@ -139,14 +164,27 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
     setManualEntry(null);
     setErrorMsg("");
     setOtpValue("");
+    setCopied(false);
     reset();
   };
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (!open) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (isProcessActive) return;
+    setIsOpen(nextOpen);
+    if (!nextOpen) {
       resetAll();
     }
+  };
+
+  const handleCancelOrClose = () => {
+    if (isProcessActive) {
+      setIsOpen(false);
+      resetAll();
+      toast.error("MFA setup cancelled by user.");
+      return;
+    }
+    setIsOpen(false);
+    resetAll();
   };
 
   const handleOTPChange = (value: string) => {
@@ -186,6 +224,17 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
     )}${"*".repeat(Math.max(extension.length - 1, 1))}`;
   };
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Secret key copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
+  };
+
   const downloadBackupCodes = () => {
     const currentDate = new Date().toLocaleDateString("id-ID");
     const currentTime = new Date().toLocaleTimeString("id-ID");
@@ -223,7 +272,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
     const link = document.createElement("a");
     link.href = url;
     link.download = `${
-      user?.username.toLowerCase() ?? "your-2fa"
+      user?.username.toLowerCase() ?? "your-mfa"
     }-backup-codes-${new Date().toISOString().split("T")[0]}.txt`;
     document.body.appendChild(link);
     link.click();
@@ -288,7 +337,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
           className="w-full flex items-center gap-2 justify-center"
         >
           <Shield className="h-4 w-4" />
-          Enable 2FA
+          Enable MFA
         </Button>
       </DialogTrigger>
 
@@ -300,7 +349,7 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <Shield className="h-5 w-5" />
-            Setup Two-Factor Authentication
+            Setup Multi-Factor Authentication
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             Add an extra layer of security to your account
@@ -317,243 +366,282 @@ export function TOTPSetupDialog({ onSuccess }: TOTPSetupDialogProps) {
           </div>
         )}
 
-        {step === "setup" && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Install an authenticator app like Google Authenticator, Authy, or
-              1Password, then click the button below to generate your QR code.
-            </p>
+        <div className="transition-all duration-300 ease-in-out">
+          {step === "setup" && (
+            <div className="space-y-4 animate-in fade-in-0 slide-in-from-left-4 duration-300">
+              <p className="text-sm text-muted-foreground">
+                Install an authenticator app like Google Authenticator, Authy,
+                or 1Password, then click the button below to generate your QR
+                code.
+              </p>
 
-            <Button
-              onClick={handleSetup}
-              disabled={isLoading}
-              className="w-full flex items-center gap-2"
-              type="button"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                "Generate QR Code"
-              )}
-            </Button>
-          </div>
-        )}
-
-        {step === "verify" && qrCode && manualEntry && (
-          <div className="space-y-4">
-            <Tabs defaultValue="qr" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="qr">QR Code</TabsTrigger>
-                <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="qr" className="space-y-4">
-                <div className="flex justify-center">
-                  <Image
-                    src={qrCode}
-                    alt="TOTP QR Code"
-                    width={192}
-                    height={192}
-                    className="w-48 h-48"
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground text-center">
-                  Scan this QR code with your authenticator app
-                </p>
-              </TabsContent>
-
-              <TabsContent value="manual" className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-foreground">
-                    Secret Key
-                  </Label>
-                  <Input
-                    value={manualEntry}
-                    readOnly
-                    className="font-mono text-sm"
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Enter this secret key manually in your authenticator app
-                </p>
-              </TabsContent>
-            </Tabs>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSubmit(onSubmit)(e);
-              }}
-              className="space-y-4"
-            >
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="otp-input"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Enter the 6-digit code from your app *
-                </Label>
-
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={otpValue}
-                    onChange={handleOTPChange}
-                    disabled={isLoading}
-                    pattern="[0-9]*"
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot
-                        index={0}
-                        className={`${isLoading ? "animate-pulse" : ""} ${
-                          errors.code ? "border-destructive" : ""
-                        }`}
-                      />
-                    </InputOTPGroup>
-                    <InputOTPGroup>
-                      <InputOTPSlot
-                        index={1}
-                        className={`${isLoading ? "animate-pulse" : ""} ${
-                          errors.code ? "border-destructive" : ""
-                        }`}
-                      />
-                    </InputOTPGroup>
-                    <InputOTPGroup>
-                      <InputOTPSlot
-                        index={2}
-                        className={`${isLoading ? "animate-pulse" : ""} ${
-                          errors.code ? "border-destructive" : ""
-                        }`}
-                      />
-                    </InputOTPGroup>
-                    <InputOTPGroup>
-                      <InputOTPSlot
-                        index={3}
-                        className={`${isLoading ? "animate-pulse" : ""} ${
-                          errors.code ? "border-destructive" : ""
-                        }`}
-                      />
-                    </InputOTPGroup>
-                    <InputOTPGroup>
-                      <InputOTPSlot
-                        index={4}
-                        className={`${isLoading ? "animate-pulse" : ""} ${
-                          errors.code ? "border-destructive" : ""
-                        }`}
-                      />
-                    </InputOTPGroup>
-                    <InputOTPGroup>
-                      <InputOTPSlot
-                        index={5}
-                        className={`${isLoading ? "animate-pulse" : ""} ${
-                          errors.code ? "border-destructive" : ""
-                        }`}
-                      />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-
-                {errors.code?.message && (
-                  <p className="text-xs text-destructive flex items-center justify-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {errors.code.message}
-                  </p>
-                )}
-
-                <p className="text-xs text-muted-foreground text-center">
-                  Code will be submitted automatically when 6 digits are entered
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep("setup")}
-                  className="flex-1"
-                  disabled={isLoading}
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isLoading || otpValue.length !== 6}
-                  className="flex-1 flex items-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Enabling...
-                    </>
-                  ) : (
-                    "Enable 2FA"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {step === "backup-codes" && backupCodes.length > 0 && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Please save these backup codes in a safe place. Each code can only
-              be used once if you lose access to the authenticator app.
-              <br />
-              <span className="font-semibold text-destructive">
-                Don&apos;t share the code with anyone!{" "}
-              </span>
-              <br />
-              <span className="text-xs text-muted-foreground">
-                Format: 8 uppercase letters or numbers (A-Z, 0-9)
-              </span>
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 bg-muted/50 border border-border rounded-md p-4 justify-center">
-              {backupCodes.map((code, idx) => (
-                <div
-                  key={idx}
-                  className="font-mono text-base text-center bg-card rounded px-2 py-1 border border-border text-foreground"
-                >
-                  {idx + 1}. {code.replace(/[^A-Z0-9]/g, "")}
-                </div>
-              ))}
+              <Button
+                onClick={handleSetup}
+                disabled={isLoading}
+                className="w-full flex items-center gap-2"
+                type="button"
+              >
+                <Shield className="h-4 w-4" />
+                Start Setup
+              </Button>
             </div>
+          )}
 
-            <Button
-              variant="outline"
-              onClick={downloadBackupCodes}
-              className="w-full flex items-center gap-2"
-              disabled={userLoading}
-            >
-              {userLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4" />
-                  Download Backup Codes
-                </>
-              )}
-            </Button>
+          {step === "verify" && (
+            <div className="space-y-4 animate-in fade-in-0 slide-in-from-right-4 duration-300">
+              <Tabs defaultValue="qr" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger
+                    value="qr"
+                    className="transition-all duration-200"
+                  >
+                    QR Code
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="manual"
+                    className="transition-all duration-200"
+                  >
+                    Manual Entry
+                  </TabsTrigger>
+                </TabsList>
 
-            <Button
-              className="w-full mt-2"
-              onClick={() => {
-                setIsOpen(false);
-                onSuccess();
-                resetAll();
-              }}
-            >
-              Done
-            </Button>
-          </div>
-        )}
+                <TabsContent
+                  value="qr"
+                  className="space-y-4 animate-in fade-in-0 slide-in-from-left-2 duration-200"
+                >
+                  <div className="flex justify-center">
+                    {qrCode ? (
+                      <Image
+                        src={qrCode}
+                        alt="TOTP QR Code"
+                        width={192}
+                        height={192}
+                        className="w-48 h-48 animate-in fade-in-0 zoom-in-95 duration-300"
+                      />
+                    ) : (
+                      <Skeleton className="w-48 h-48 rounded-lg" />
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Scan this QR code with your authenticator app
+                  </p>
+                </TabsContent>
+
+                <TabsContent
+                  value="manual"
+                  className="space-y-4 animate-in fade-in-0 slide-in-from-right-2 duration-200"
+                >
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-foreground">
+                      Secret Key
+                    </Label>
+                    <div className="relative">
+                      {manualEntry ? (
+                        <>
+                          <Input
+                            value={manualEntry}
+                            readOnly
+                            className="font-mono text-sm pr-12"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                            onClick={() => copyToClipboard(manualEntry)}
+                          >
+                            {copied ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </>
+                      ) : (
+                        <Skeleton className="h-10 w-full rounded-md" />
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Enter this secret key manually in your authenticator app
+                  </p>
+                </TabsContent>
+              </Tabs>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmit(onSubmit)(e);
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="otp-input"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Enter the 6-digit code from your app *
+                  </Label>
+
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otpValue}
+                      onChange={handleOTPChange}
+                      disabled={isLoading}
+                      pattern="[0-9]*"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot
+                          index={0}
+                          className={`${isLoading ? "animate-pulse" : ""} ${
+                            errors.code ? "border-destructive" : ""
+                          }`}
+                        />
+                      </InputOTPGroup>
+                      <InputOTPGroup>
+                        <InputOTPSlot
+                          index={1}
+                          className={`${isLoading ? "animate-pulse" : ""} ${
+                            errors.code ? "border-destructive" : ""
+                          }`}
+                        />
+                      </InputOTPGroup>
+                      <InputOTPGroup>
+                        <InputOTPSlot
+                          index={2}
+                          className={`${isLoading ? "animate-pulse" : ""} ${
+                            errors.code ? "border-destructive" : ""
+                          }`}
+                        />
+                      </InputOTPGroup>
+                      <InputOTPGroup>
+                        <InputOTPSlot
+                          index={3}
+                          className={`${isLoading ? "animate-pulse" : ""} ${
+                            errors.code ? "border-destructive" : ""
+                          }`}
+                        />
+                      </InputOTPGroup>
+                      <InputOTPGroup>
+                        <InputOTPSlot
+                          index={4}
+                          className={`${isLoading ? "animate-pulse" : ""} ${
+                            errors.code ? "border-destructive" : ""
+                          }`}
+                        />
+                      </InputOTPGroup>
+                      <InputOTPGroup>
+                        <InputOTPSlot
+                          index={5}
+                          className={`${isLoading ? "animate-pulse" : ""} ${
+                            errors.code ? "border-destructive" : ""
+                          }`}
+                        />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+
+                  {errors.code?.message && (
+                    <p className="text-xs text-destructive flex items-center justify-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.code.message}
+                    </p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground text-center">
+                    Code will be submitted automatically when 6 digits are
+                    entered
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelOrClose}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading || otpValue.length !== 6}
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Enabling...
+                      </>
+                    ) : (
+                      "Enable MFA"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {step === "backup-codes" && backupCodes.length > 0 && (
+            <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
+              <p className="text-sm text-muted-foreground text-center">
+                Please save these backup codes in a safe place. Each code can
+                only be used once if you lose access to the authenticator app.
+                <br />
+                <span className="font-semibold text-destructive">
+                  Don&apos;t share the code with anyone!{" "}
+                </span>
+                <br />
+                <span className="text-xs text-muted-foreground">
+                  Format: 8 uppercase letters or numbers (A-Z, 0-9)
+                </span>
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 bg-muted/50 border border-border rounded-md p-4 justify-center">
+                {backupCodes.map((code, idx) => (
+                  <div
+                    key={idx}
+                    className="font-mono text-base text-center bg-card rounded px-2 py-1 border border-border text-foreground animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
+                    style={{ animationDelay: `${idx * 50}ms` }}
+                  >
+                    {idx + 1}. {code.replace(/[^A-Z0-9]/g, "")}
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={downloadBackupCodes}
+                className="w-full flex items-center gap-2"
+                disabled={userLoading}
+              >
+                {userLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Download Backup Codes
+                  </>
+                )}
+              </Button>
+
+              <Button
+                className="w-full mt-2"
+                onClick={() => {
+                  setIsOpen(false);
+                  onSuccess();
+                  resetAll();
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

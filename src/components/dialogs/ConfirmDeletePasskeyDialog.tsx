@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TriangleAlert, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 interface ConfirmDeleteDialogProps {
   open: boolean;
@@ -24,8 +25,24 @@ export function ConfirmDeleteDialog({
   loading,
   passkeyName,
 }: ConfirmDeleteDialogProps) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (loading && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [loading]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (loading) return;
+    if (!nextOpen) onCancel();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onCancel}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[450px] bg-card border-border">
         {loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-[rgba(128,128,128,0.15)] dark:bg-[rgba(120,120,120,0.25)] rounded-lg cursor-not-allowed" />

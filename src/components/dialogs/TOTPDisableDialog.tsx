@@ -71,6 +71,17 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
     fetchCsrfToken();
   }, [isOpen, setValue]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (isLoading && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [isLoading]);
+
   const watchedValues = watch();
   const hasContent = watchedValues.password;
 
@@ -123,6 +134,7 @@ export function TOTPDisableDialog({ onSuccess }: TOTPDisableDialogProps) {
   };
 
   const handleOpenChange = (open: boolean) => {
+    if (isLoading) return;
     setIsOpen(open);
     if (!open) {
       handleClose();

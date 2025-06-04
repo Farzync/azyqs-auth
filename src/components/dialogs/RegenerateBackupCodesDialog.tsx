@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { regenerateBackupCodesAction } from "@/server/auth";
 import { Button } from "@/components/ui/button";
@@ -51,15 +51,13 @@ export function RegenerateBackupCodesDialog({
           setSuccess(true);
           toast.success("New backup codes generated successfully!");
         } else {
-          const errorMessage = "Failed to get backup codes. Please try again.";
-          setErrorMsg(errorMessage);
+          setErrorMsg("Failed to get backup codes. Please try again.");
           setBackupCodes([]);
           setSuccess(false);
         }
       }
     } catch {
-      const errorMessage = "A system error has occurred. Please try again.";
-      setErrorMsg(errorMessage);
+      setErrorMsg("A system error has occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +124,21 @@ export function RegenerateBackupCodesDialog({
     toast.success("Backup codes downloaded successfully!");
   };
 
+  const isProcessActive = isLoading || success;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (isProcessActive && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [isProcessActive]);
+
   const handleOpenChange = (open: boolean) => {
+    if (isProcessActive) return;
     setIsOpen(open);
     if (!open) {
       setBackupCodes([]);
