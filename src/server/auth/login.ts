@@ -12,9 +12,9 @@ import {
 } from "@/lib/auth";
 import { z } from "zod";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
-import { comparePassword } from "@/lib/auth/comparePassword";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
+import { verifyUser } from "./verifyUser";
 
 /**
  * Authenticate a user and set a JWT cookie if credentials are valid.
@@ -58,34 +58,37 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
   }
 
   try {
+    const verifyResult = await verifyUser(username, password);
+
+    if (!verifyResult.success) {
+      const userFromDb = await prisma.user.findUnique({ where: { username } });
+      if (userFromDb) {
+        await createUserAuditLog({
+          userId: userFromDb.id,
+          action: AuditLogAction.LOGIN,
+          details: `Failed login attempt for username: ${username}`,
+          method: AuditLogMethod.PASSWORD,
+          success: false,
+          errorMessage: "Incorrect password",
+          at: timestamp,
+        });
+      }
+      return formatError("Username or password is incorrect");
+    }
+
     const user = await prisma.user.findUnique({
       where: { username },
       include: { UserMfaCredential: true },
     });
 
     if (!user) {
-      return formatError("Username or password is incorrect");
-    }
-
-    const isValidPassword = await comparePassword(password, user.password);
-    if (!isValidPassword) {
-      await createUserAuditLog({
-        userId: user.id,
-        action: AuditLogAction.LOGIN,
-        details: `Failed login attempt for username: ${username}`,
-        method: AuditLogMethod.PASSWORD,
-        success: false,
-        errorMessage: "Incorrect password",
-        at: timestamp,
-      });
-
-      return formatError("Username or password is incorrect");
+      return formatError("User not found after authentication");
     }
 
     const userMfaCredential = user.UserMfaCredential[0];
-    const isTotpEnabled = userMfaCredential?.isEnabled || false;
+    const isMfaEnabled = userMfaCredential?.isEnabled || false;
 
-    if (isTotpEnabled) {
+    if (isMfaEnabled) {
       await createUserAuditLog({
         userId: user.id,
         action: AuditLogAction.LOGIN,
