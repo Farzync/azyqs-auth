@@ -1,21 +1,13 @@
 "use client";
 
-import { useTransition, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { logoutAction } from "@/server/auth";
 import Link from "next/link";
-import { Loader2, User, LogIn, UserPlus, Settings, LogOut } from "lucide-react";
+import { User, LogIn, UserPlus, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { formatTime, formatDate } from "@/utils/formatters";
-import toast from "react-hot-toast";
+import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 
 function HomePageSkeleton() {
   return (
@@ -66,9 +58,7 @@ function HomePageSkeleton() {
 }
 
 export default function HomePage() {
-  const { user, setUser, isLoading: authLoading } = useAuth();
-  const [isPending, startTransition] = useTransition();
-  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
   const [timeState, setTimeState] = useState<{
     baseTime: Date | null;
     offset: number;
@@ -120,18 +110,6 @@ export default function HomePage() {
     return new Date(milliseconds);
   };
 
-  const handleLogout = () => {
-    startTransition(async () => {
-      try {
-        await logoutAction();
-        toast.success("Logged out successfully");
-        setUser(null);
-      } catch {
-        setErrorDialogOpen(true);
-      }
-    });
-  };
-
   if (authLoading) {
     return <HomePageSkeleton />;
   }
@@ -140,38 +118,6 @@ export default function HomePage() {
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-background">
-      <Dialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Logout Failed</DialogTitle>
-          </DialogHeader>
-          <div className="py-2">
-            <p className="text-sm text-muted-foreground">
-              Failed to logout. Try Again?
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setErrorDialogOpen(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setErrorDialogOpen(false);
-                handleLogout();
-              }}
-              disabled={isPending}
-            >
-              Try Again
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <div className="w-full max-w-2xl mx-auto">
         <div className="w-full p-6 rounded-lg bg-card border shadow-md mb-4 relative">
           <div className="flex items-center space-x-4">
@@ -226,7 +172,6 @@ export default function HomePage() {
                   <Button
                     variant="default"
                     className="w-full h-10 font-medium text-sm flex items-center justify-center gap-2"
-                    disabled={isPending}
                   >
                     <Settings className="h-4 w-4" />
                     My Account
@@ -239,24 +184,7 @@ export default function HomePage() {
                   <span className="flex-1 h-px bg-muted-foreground/20" />
                 </div>
 
-                <Button
-                  variant="destructive"
-                  onClick={handleLogout}
-                  className="w-full h-10 font-medium text-sm flex items-center justify-center gap-2"
-                  disabled={isPending}
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Logging out...
-                    </>
-                  ) : (
-                    <>
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </>
-                  )}
-                </Button>
+                <LogoutDialog />
               </>
             ) : (
               <>
@@ -264,7 +192,6 @@ export default function HomePage() {
                   <Button
                     variant="default"
                     className="w-full h-10 font-medium text-sm flex items-center justify-center gap-2"
-                    disabled={isPending}
                   >
                     <LogIn className="h-4 w-4" />
                     Login
@@ -281,7 +208,6 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     className="w-full h-10 font-medium text-sm flex items-center justify-center gap-2"
-                    disabled={isPending}
                   >
                     <UserPlus className="h-4 w-4" />
                     Register

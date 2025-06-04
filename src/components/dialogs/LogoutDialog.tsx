@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LogOut, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import toast from "react-hot-toast";
@@ -29,7 +29,9 @@ export function LogoutDialog() {
       await logoutAction();
       setUser(null);
       toast.success("Logged out successfully");
-      window.location.href = "/";
+      if (window.location.pathname !== "/") {
+        window.location.href = "/";
+      }
     } catch {
       setErrorDialogOpen(true);
     } finally {
@@ -37,9 +39,25 @@ export function LogoutDialog() {
     }
   };
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (isLoading && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [isLoading]);
+
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!isLoading) setOpen(nextOpen);
+        }}
+      >
         <DialogTrigger asChild>
           <Button
             variant="outline"
@@ -87,7 +105,13 @@ export function LogoutDialog() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
+
+      <Dialog
+        open={errorDialogOpen}
+        onOpenChange={(nextOpen) => {
+          if (!isLoading) setErrorDialogOpen(nextOpen);
+        }}
+      >
         <DialogContent className="bg-card border-border">
           <DialogHeader>
             <DialogTitle className="text-foreground">Logout Failed</DialogTitle>
