@@ -12,7 +12,7 @@ import {
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { prisma } from "@/lib/db";
-import { comparePassword } from "@/lib/auth/comparePassword";
+import { verifyUser } from "@/server/auth/verifyUser";
 
 /**
  * Delete the currently authenticated user's account after password and CSRF validation.
@@ -33,7 +33,6 @@ import { comparePassword } from "@/lib/auth/comparePassword";
 export async function deleteAccountAction(data: unknown) {
   const parsed = deleteAccountSchema.safeParse(data);
   if (!parsed.success) {
-    // No audit log, userId is not available
     return {
       error: "Validation error",
       issues: parsed.error.flatten().fieldErrors,
@@ -42,12 +41,10 @@ export async function deleteAccountAction(data: unknown) {
 
   const token = await getCookie("token");
   if (!token) {
-    // No audit log, userId is not available
     return formatError("Unauthorized");
   }
   const user = await getUserFromToken(token);
   if (!user) {
-    // No audit log, userId is not available
     return formatError("User not Found");
   }
 
@@ -67,8 +64,8 @@ export async function deleteAccountAction(data: unknown) {
     return formatError("CSRF validation failed");
   }
 
-  const isValid = await comparePassword(password, user.password);
-  if (!isValid) {
+  const verifyResult = await verifyUser(user.username, password);
+  if (!verifyResult.success) {
     await createUserAuditLog({
       userId: user.id,
       action: AuditLogAction.CHANGE_PASSWORD,

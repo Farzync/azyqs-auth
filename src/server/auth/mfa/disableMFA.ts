@@ -6,7 +6,7 @@ import { z } from "zod";
 import { TokenPayload } from "@/types/token";
 import { formatError, verifyToken, logError, getCookie } from "@/lib/auth";
 import { validateCSRFToken } from "@/lib/auth/csrfToken";
-import { comparePassword } from "@/lib/auth/comparePassword";
+import { verifyUser } from "@/server/auth/verifyUser";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 
@@ -73,8 +73,8 @@ export async function disableMFAAction(
       return formatError("User not found");
     }
 
-    const isValidPassword = await comparePassword(password, user.password);
-    if (!isValidPassword) {
+    const verifyResult = await verifyUser(user.username, password);
+    if (!verifyResult.success) {
       await createUserAuditLog({
         userId: payload.id,
         action: AuditLogAction.DISABLE_MFA,

@@ -11,8 +11,8 @@ import {
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { prisma } from "@/lib/db";
-import { comparePassword } from "@/lib/auth/comparePassword";
 import { hashPassword } from "@/lib/auth/hashPassword";
+import { verifyUser } from "@/server/auth/verifyUser";
 
 /**
  * Change the password of the currently authenticated user.
@@ -32,7 +32,6 @@ import { hashPassword } from "@/lib/auth/hashPassword";
 export async function changePasswordAction(data: unknown) {
   const parsed = changePasswordSchema.safeParse(data);
   if (!parsed.success) {
-    // No audit log, userId is not available
     return {
       error: "Validation error",
       issues: parsed.error.flatten().fieldErrors,
@@ -41,12 +40,11 @@ export async function changePasswordAction(data: unknown) {
 
   const token = await getCookie("token");
   if (!token) {
-    // No audit log, userId is not available
     return formatError("Unauthorized");
   }
+
   const user = await getUserFromToken(token);
   if (!user) {
-    // No audit log, userId is not available
     return formatError("User not Found");
   }
 
@@ -55,8 +53,8 @@ export async function changePasswordAction(data: unknown) {
   const csrfError = await requireValidCSRFToken(csrfToken);
   if (csrfError) return csrfError;
 
-  const isValid = await comparePassword(currentPassword, user.password);
-  if (!isValid) {
+  const verifyResult = await verifyUser(user.username, currentPassword);
+  if (!verifyResult.success) {
     await createUserAuditLog({
       userId: user.id,
       action: AuditLogAction.CHANGE_PASSWORD,
