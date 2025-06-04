@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { generateAuthenticationOptionsAction } from "@/server/auth/webauthn/generateAuthenticationOptions";
-import { verifyAuthenticationAction } from "@/server/auth/webauthn/verifyAuthentication";
+import { verifyPasskeyAction } from "@/server/auth/webauthn/verifyPasskey";
 import { authenticatePasskey } from "@/lib/auth/webauthnClient";
 import { getProfile } from "@/server/user";
 import { User } from "@/types/user";
@@ -39,7 +39,7 @@ export function usePasskeyLogin(setUser: (user: User) => void) {
 
       const response = await authenticatePasskey(optRes.options);
 
-      const verifyRes = await verifyAuthenticationAction(response);
+      const verifyRes = await verifyPasskeyAction(response);
 
       if ("error" in verifyRes) {
         throw new Error(verifyRes.error || "Passkey authentication failed");

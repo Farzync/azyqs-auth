@@ -27,7 +27,7 @@ const origin = process.env.AUTH_ORIGIN || "http://localhost:3000";
  * - Logs errors on failure
  */
 
-export async function verifyAuthenticationAction(
+export async function verifyPasskeyAction(
   response: AuthenticationResponseJSON
 ): Promise<{ success?: boolean; error?: string; message?: string }> {
   const timestamp = new Date();
