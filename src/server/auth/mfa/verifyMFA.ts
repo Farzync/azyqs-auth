@@ -9,7 +9,7 @@ import {
   logError,
   verifyToken,
 } from "@/lib/auth";
-import { validateCSRFToken } from "@/lib/auth/csrfToken";
+import { validateCSRFToken } from "@/server/utils/csrfToken";
 import { verifyMFACode } from "@/lib/auth/mfa";
 import { prisma } from "@/lib/db";
 import { mfaVerifySchema } from "@/lib/zod/schemas/mfa.schema";

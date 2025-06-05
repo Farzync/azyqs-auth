@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { PasskeyList } from "./PasskeyListDialog";
+import { PasskeyList } from "@/components/dialogs/PasskeyListDialog";
 import { Shield } from "lucide-react";
 import type { Passkey } from "@/types/passkey";
 

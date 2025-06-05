@@ -3,7 +3,10 @@
 import { prisma } from "@/lib/db";
 import { formatError, getCookie, logError, verifyToken } from "@/lib/auth";
 import { TokenPayload } from "@/types/token";
-import { generateBackupCodes, hashBackupCodes } from "@/lib/auth/backupCodes";
+import {
+  generateBackupCodes,
+  hashBackupCodes,
+} from "@/lib/auth/mfaBackupCodes";
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 

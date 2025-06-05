@@ -1,8 +1,7 @@
 // WARNING: This file uses Node.js-only APIs (crypto, hashPassword, comparePassword).
 // Do NOT import this file in Edge Runtime or middleware. Use only in server-side code.
 import { randomBytes } from "crypto";
-import { hashPassword } from "@/lib/auth/hashPassword";
-import { comparePassword } from "@/lib/auth/comparePassword";
+import { bcryptHash, bcryptCompare } from "@/lib/auth/bcrypt";
 
 const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -45,7 +44,7 @@ export function generateBackupCodes(count = 8): string[] {
  * const hashes = await hashBackupCodes(codes);
  */
 export async function hashBackupCodes(codes: string[]): Promise<string[]> {
-  return Promise.all(codes.map((code) => hashPassword(code)));
+  return Promise.all(codes.map((code) => bcryptHash(code)));
 }
 
 /**
@@ -63,7 +62,7 @@ export async function verifyBackupCode(
   hashes: string[]
 ): Promise<number | null> {
   for (let i = 0; i < hashes.length; i++) {
-    if (await comparePassword(input, hashes[i])) {
+    if (await bcryptCompare(input, hashes[i])) {
       return i;
     }
   }

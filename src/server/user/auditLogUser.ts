@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { getCookie } from "@/lib/auth/cookies";
-import { getUserFromToken } from "@/lib/auth/user";
+import { getUserFromToken } from "@/lib/auth";
 
 /**
  * Get audit logs for the currently logged-in user (from token cookie)

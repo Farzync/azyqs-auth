@@ -1,8 +1,9 @@
-import { prisma } from "@/lib/db";
 // WARNING: Do NOT import this file in Edge Runtime or middleware.
 // It may transitively import server-only code (e.g., Prisma, Node.js APIs).
+import { prisma } from "@/lib/db";
 import { verifyToken } from "@/lib/auth/jwt";
 import { TokenPayload } from "@/types/token";
+import { bcryptCompare } from "@/lib/auth/bcrypt";
 
 /**
  * Get user data from a JWT token.
@@ -44,4 +45,30 @@ export async function getUserMfaCredentialFromToken(token: string) {
     where: { userId: payload.id },
   });
   return userMfaCredential;
+}
+
+/**
+ * Verifies user authentication by username and password only.
+ * Does not return user data, only authentication status.
+ *
+ * @param username - The username to verify
+ * @param password - The password to verify
+ * @returns {Promise<{ success: boolean }>} - { success: true } if credentials are valid, otherwise { success: false }
+ *
+ * Example:
+ *   const result = await verifyUser("alice", "password123");
+ *   if (result.success) { ... }
+ */
+export async function verifyUser(username: string, password: string) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { password: true },
+  });
+
+  if (!user) return { success: false };
+
+  const isValidPassword = await bcryptCompare(password, user.password);
+  if (!isValidPassword) return { success: false };
+
+  return { success: true };
 }

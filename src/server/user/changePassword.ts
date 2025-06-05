@@ -11,8 +11,8 @@ import {
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/auth/hashPassword";
-import { verifyUser } from "@/server/auth/verifyUser";
+import { verifyUser } from "@/lib/auth";
+import { bcryptHash } from "@/lib/auth/bcrypt";
 
 /**
  * Change the password of the currently authenticated user.
@@ -68,7 +68,7 @@ export async function changePasswordAction(data: unknown) {
   }
 
   try {
-    const hashedNew = await hashPassword(newPassword);
+    const hashedNew = await bcryptHash(newPassword);
     await prisma.user.update({
       where: { id: user.id },
       data: { password: hashedNew },

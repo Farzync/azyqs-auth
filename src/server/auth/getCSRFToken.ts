@@ -1,6 +1,6 @@
 "use server";
 
-import { setCSRFTokenIfMissing } from "@/lib/auth/csrfToken";
+import { setCSRFTokenIfMissing } from "@/server/utils/csrfToken";
 
 /**
  * Get or set a CSRF token cookie for the current session.

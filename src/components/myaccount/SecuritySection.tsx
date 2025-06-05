@@ -13,11 +13,11 @@ import { Shield, AlertCircle } from "lucide-react";
 import { getMFAStatusAction } from "@/server/auth";
 import { getUserCredentialsAction } from "@/server/auth/webauthn/getUserCredentials";
 import type { Passkey } from "@/types/passkey";
-import { AuditLogSection } from "../sections/security/AuditLogSection";
-import { PasskeySection } from "../sections/security/PasskeySection";
-import { PasswordSection } from "../sections/security/PasswordSection";
-import { SecuritySectionSkeleton } from "../sections/security/SecuritySkeleton";
-import { MFASection } from "../sections/security/MFASection";
+import { AuditLogSection } from "@/components/sections/security/AuditLogSection";
+import { PasskeySection } from "@/components/sections/security/PasskeySection";
+import { PasswordSection } from "@/components/sections/security/PasswordSection";
+import { SecuritySectionSkeleton } from "@/components/sections/security/SecuritySkeleton";
+import { MFASection } from "@/components/sections/security/MFASection";
 
 interface SecuritySectionProps {
   isLoading?: boolean;

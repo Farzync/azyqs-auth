@@ -9,12 +9,12 @@ import {
   requireValidCSRFToken,
   formatError,
   logError,
+  verifyUser,
 } from "@/lib/auth";
 import { z } from "zod";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
-import { verifyUser } from "./verifyUser";
 
 /**
  * Authenticate a user and set a JWT cookie if credentials are valid.

@@ -8,7 +8,7 @@ import {
   logError,
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/auth/hashPassword";
+import { bcryptHash } from "@/lib/auth/bcrypt";
 import { AuditLogAction } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 
@@ -83,7 +83,7 @@ export async function registerAction(input: unknown) {
       return formatError("Email or username is already been used");
     }
 
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await bcryptHash(password);
 
     const newUser = await prisma.user.create({
       data: {

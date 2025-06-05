@@ -12,7 +12,7 @@ import {
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { prisma } from "@/lib/db";
-import { verifyUser } from "@/server/auth/verifyUser";
+import { verifyUser } from "@/lib/auth";
 
 /**
  * Delete the currently authenticated user's account after password and CSRF validation.

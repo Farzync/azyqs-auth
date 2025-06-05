@@ -5,8 +5,8 @@ import { mfaDisableSchema } from "@/lib/zod/schemas/mfa.schema";
 import { z } from "zod";
 import { TokenPayload } from "@/types/token";
 import { formatError, verifyToken, logError, getCookie } from "@/lib/auth";
-import { validateCSRFToken } from "@/lib/auth/csrfToken";
-import { verifyUser } from "@/server/auth/verifyUser";
+import { validateCSRFToken } from "@/server/utils/csrfToken";
+import { verifyUser } from "@/lib/auth";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 

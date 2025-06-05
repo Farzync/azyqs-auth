@@ -1,5 +1,5 @@
 import { formatError } from "@/lib/auth";
-import { validateCSRFToken } from "@/lib/auth/csrfToken";
+import { validateCSRFToken } from "@/server/utils/csrfToken";
 
 /**
  * Require a valid CSRF token, returning an error object if invalid.

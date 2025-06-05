@@ -10,8 +10,8 @@ import {
 } from "@/lib/auth";
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
-import { verifyBackupCode } from "@/lib/auth/backupCodes";
-import { validateCSRFToken } from "@/lib/auth/csrfToken";
+import { verifyBackupCode } from "@/lib/auth/mfaBackupCodes";
+import { validateCSRFToken } from "@/server/utils/csrfToken";
 import { prisma } from "@/lib/db";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { TokenPayload } from "@/types/token";

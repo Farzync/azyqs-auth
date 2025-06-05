@@ -5,8 +5,11 @@ import { mfaSetupSchema } from "@/lib/zod/schemas/mfa.schema";
 import { z } from "zod";
 import { TokenPayload } from "@/types/token";
 import { formatError, getCookie, verifyToken, logError } from "@/lib/auth";
-import { generateBackupCodes, hashBackupCodes } from "@/lib/auth/backupCodes";
-import { validateCSRFToken } from "@/lib/auth/csrfToken";
+import {
+  generateBackupCodes,
+  hashBackupCodes,
+} from "@/lib/auth/mfaBackupCodes";
+import { validateCSRFToken } from "@/server/utils/csrfToken";
 import { verifyMFACode } from "@/lib/auth/mfa";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
