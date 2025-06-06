@@ -77,7 +77,7 @@ export function AuditLogSection() {
             <Button
               variant="outline"
               onClick={() => setShowAuditLogDialog(true)}
-              className="flex items-center gap-2 h-10 w-full transition-all hover:scale-[1.02]"
+              className="flex items-center gap-2 h-10 w-full transition-all"
             >
               <Eye className="h-4 w-4" />
               View Audit Log

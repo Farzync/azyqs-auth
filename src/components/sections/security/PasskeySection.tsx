@@ -118,7 +118,7 @@ export function PasskeySection({
             onClick={handleRegisterPasskey}
             disabled={registering}
             variant="default"
-            className="flex items-center gap-2 h-10 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-2 h-10 transition-all"
           >
             {registering ? (
               <>
@@ -136,7 +136,7 @@ export function PasskeySection({
           <Button
             variant="outline"
             onClick={() => setShowAllDialog(true)}
-            className="flex items-center gap-2 h-10 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-2 h-10 transition-all"
             disabled={isLoading}
           >
             <List className="h-4 w-4" />

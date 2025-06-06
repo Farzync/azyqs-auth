@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   InputOTP,
@@ -147,16 +146,6 @@ export function MFAVerifyForm({
     }
   };
 
-  const handleBackupCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    backupForm.setValue("code", value);
-
-    if (backupForm.formState.errors.code) {
-      backupForm.clearErrors("code");
-    }
-    if (errorMsg) setErrorMsg("");
-  };
-
   const handleTabChange = (value: string) => {
     setActiveTab(value as "totp" | "backup");
     setErrorMsg("");
@@ -192,7 +181,7 @@ export function MFAVerifyForm({
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="mfa">MFA Code</TabsTrigger>
+              <TabsTrigger value="totp">MFA Code</TabsTrigger>
               <TabsTrigger value="backup">Backup Code</TabsTrigger>
             </TabsList>
 
@@ -327,8 +316,8 @@ export function MFAVerifyForm({
             <TabsContent value="backup">
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Enter one of your backup codes (8 characters: letters,
-                  numbers, and symbols). Backup codes can only be used once.
+                  Enter one of your backup codes (8 characters: letters and
+                  numbers). Backup codes can only be used once.
                 </p>
               </div>
 
@@ -344,29 +333,57 @@ export function MFAVerifyForm({
                     Backup Code *
                   </Label>
 
-                  <Input
-                    id="backup-input"
-                    type="text"
-                    placeholder="Enter 8-character backup code (A-Z, 0-9)"
-                    value={backupForm.watch("code") || ""}
-                    onChange={handleBackupCodeChange}
-                    disabled={isLoading}
-                    maxLength={8}
-                    className={`font-mono ${
-                      backupForm.formState.errors.code
-                        ? "border-destructive"
-                        : ""
-                    }`}
-                    autoFocus
-                    autoComplete="off"
-                  />
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={8}
+                      value={backupForm.watch("code") || ""}
+                      onChange={(value: string) => {
+                        const formatted = value
+                          .toUpperCase()
+                          .replace(/[^A-Z0-9]/g, "");
+                        backupForm.setValue("code", formatted);
+
+                        if (backupForm.formState.errors.code) {
+                          backupForm.clearErrors("code");
+                        }
+                        if (errorMsg) setErrorMsg("");
+
+                        if (formatted.length === 8) {
+                          setTimeout(() => {
+                            backupForm.handleSubmit(onSubmitBackup)();
+                          }, 100);
+                        }
+                      }}
+                      disabled={isLoading}
+                      autoFocus
+                      pattern="[A-Z0-9]*"
+                    >
+                      {[...Array(8)].map((_, idx) => (
+                        <InputOTPGroup key={idx}>
+                          <InputOTPSlot
+                            index={idx}
+                            className={`${isLoading ? "animate-pulse" : ""} ${
+                              backupForm.formState.errors.code
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
+                        </InputOTPGroup>
+                      ))}
+                    </InputOTP>
+                  </div>
 
                   {backupForm.formState.errors.code && (
-                    <p className="text-xs text-destructive flex items-center gap-1">
+                    <p className="text-xs text-destructive flex items-center justify-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {backupForm.formState.errors.code.message}
                     </p>
                   )}
+
+                  <p className="text-xs text-muted-foreground text-center">
+                    Code will be submitted automatically when 8 characters are
+                    entered
+                  </p>
                 </div>
 
                 <Button
