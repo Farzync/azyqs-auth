@@ -480,7 +480,7 @@ export function MFASecuritySetupDialog({
                 <div className="space-y-1.5">
                   <Label
                     htmlFor="otp-input"
-                    className="text-sm font-medium text-foreground"
+                    className="text-sm font-medium text-foreground justify-center"
                   >
                     Enter the 6-digit code from your MFA app *
                   </Label>
@@ -552,8 +552,9 @@ export function MFASecuritySetupDialog({
                   )}
 
                   <p className="text-xs text-muted-foreground text-center">
-                    Code will be submitted automatically when 6 digits are
-                    entered
+                    MFA wil not be enabled until you enter the code from your
+                    authenticator app. Please ensure your device is synchronized
+                    with the correct time.
                   </p>
                 </div>
 
