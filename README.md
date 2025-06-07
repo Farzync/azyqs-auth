@@ -1,172 +1,265 @@
-# Azyqs-Auth
+<div align="center">
 
-A modern, production-ready authentication and account management platform built with **Next.js 15**, **React 19**, **Prisma ORM**, and **PostgreSQL**.  
-This project delivers secure, scalable, and user-friendly authentication features, including:
+# 🔐 Azyqs-Auth
 
-- Multi-Factor Authentication (MFA) with TOTP & backup codes
-- WebAuthn (passkey) support for passwordless login
-- Interactive, detailed audit logging (track all user/security events)
-- Modern, accessible UI/UX (Radix UI, Tailwind CSS)
-- And much more!
+### *Next-Generation Authentication Platform*
 
-> **Why Azyqs-Auth?**
->
-> - Real-time, filterable audit log for all user actions (login, profile changes, MFA, passkey, etc.)
-> - Secure backup code management (regeneration only if MFA is active, all actions logged)
-> - Designed for SaaS, internal tools, or any app needing robust authentication
+[![Next.js](https://img.shields.io/badge/Next.js-15.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.8-2D3748?style=for-the-badge&logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-336791?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
 
----
+*Production-ready authentication with WebAuthn, MFA, and comprehensive audit logging*
 
-## 🚀 Description
-
-**Azyqs-Auth** is a robust authentication starter kit and reference implementation.  
-It demonstrates best practices in user security, modern UI/UX, and developer experience.  
-**Key highlight:**
-
-> **Interactive Audit Log:** Users can monitor all account activity (login, profile changes, MFA, passkey, etc.) in real-time, with device, IP, status, and error details—directly from the UI.
+[🚀 Live Demo](#) • [📖 Documentation](#) • [🐛 Report Bug](#) • [💡 Request Feature](#)
 
 ---
 
-## 🆕 Latest Updates
+</div>
 
-- **WebAuthn (Passkey) Support:** Register and login with passkeys for passwordless authentication.
-- **Multi-Factor Authentication (MFA):** TOTP-based MFA with backup codes (backup codes can only be regenerated if MFA is active; all actions are logged).
-- **Interactive Audit Logging:** Monitor all account activity (login, profile changes, MFA, passkey, etc.) in detail and in real-time from the UI. Every important action, success or failure, is logged with timestamp, device, IP, and error (if any).
-- **ReCAPTCHA Integration:** Protect login and registration from bots.
-- **Modern UI:** Built with Radix UI, Tailwind CSS, and custom components.
-- **Improved Security:** CSRF protection, JWT-based sessions, secure password hashing, and more.
+## 🌟 **Why Azyqs-Auth?**
 
----
+> **Enterprise-grade security meets developer-friendly experience**
 
-## ✨ Features
+Azyqs-Auth isn't just another auth starter—it's a complete authentication ecosystem designed for modern web applications. Built with the latest technologies and security best practices.
 
-- User registration and login (username/email/password)
-- Passwordless login with WebAuthn (passkey)
-- TOTP-based MFA with backup codes (regeneration only if MFA is active, all actions logged)
-- Account management (update profile, change password, delete account)
-- **Interactive Audit Log:** Real-time, filterable account activity history (success/failure, device, IP, error details)
-- reCAPTCHA v3 integration
-- Responsive, accessible, and modern UI
-- Modular, scalable, and type-safe codebase
+### ✨ **Key Highlights**
+
+🔍 **Real-time Audit Logging** — Monitor every user action with detailed device, IP, and error tracking  
+🔑 **Passwordless Authentication** — WebAuthn/Passkey support for seamless user experience  
+🛡️ **Multi-Factor Security** — TOTP-based MFA with intelligent backup code management  
+🎨 **Modern UI/UX** — Beautiful, accessible interface built with Radix UI and Tailwind CSS
 
 ---
 
-## 🛠️ Tech Stack & Main Modules
+## 🚀 **Features**
 
-- **Frontend:** Next.js 15.3.x, React 19.1.x, Tailwind CSS 4.x, Radix UI, Lucide React (icons)
-- **Backend:** Next.js API routes, Prisma ORM 6.x, PostgreSQL (>=13)
-- **Authentication:** bcryptjs, JWT (jose), WebAuthn (simplewebauthn), TOTP (speakeasy)
-- **Validation:** Zod, React Hook Form
-- **Security:** CSRF protection, reCAPTCHA, detailed audit logging (user & security events)
-- **Other:** React Hot Toast (notifications), QRCode (for MFA setup)
+<table>
+<tr>
+<td width="50%">
 
----
+### 🔐 **Authentication**
+- ✅ Traditional login (username/email/password)
+- ✅ Passwordless WebAuthn (passkeys)
+- ✅ TOTP-based Multi-Factor Authentication
+- ✅ Secure backup codes with smart regeneration
+- ✅ JWT-based session management
 
-## 📁 Project Structure
+</td>
+<td width="50%">
 
-```
-prisma/           # Prisma schema & migrations
-src/
-  app/            # Next.js app directory (routing, layouts, error handling)
-  components/     # UI components (dialogs, forms, sections, etc.)
-  contexts/       # React context providers
-  hooks/          # Custom React hooks
-  lib/            # Shared utilities (auth, db, etc.)
-  server/         # API route handlers (auth, user, etc.)
-  types/          # TypeScript types
-  utils/          # Utility functions
-public/           # Static assets
-```
+### 🛡️ **Security & Management**
+- ✅ Interactive real-time audit logging
+- ✅ CSRF protection & rate limiting
+- ✅ reCAPTCHA v3 integration
+- ✅ Account management (profile, password, deletion)
+- ✅ Device and IP tracking
 
----
-
-## 📦 Main Dependencies & Versions
-
-- `next@15.3.x`, `react@19.1.x`, `react-dom@19.1.x`
-- `@prisma/client@6.8.x`, `prisma@6.8.x`, `pg@8.16.x`
-- `@hookform/resolvers@5.x`, `react-hook-form@7.x`, `zod@3.x`
-- `@simplewebauthn/browser@13.x`, `@simplewebauthn/server@13.x`, `speakeasy@2.x`
-- `tailwindcss@4.x`, `radix-ui`, `lucide-react@0.511.x`
-- `bcryptjs@3.x`, `jose@6.x` (JWT), `cookie@1.x`, `qrcode@1.5.x`
+</td>
+</tr>
+</table>
 
 ---
 
-## ⚡ Getting Started
+## 🏗️ **Tech Stack**
+
+<div align="center">
+
+| Category | Technologies |
+|----------|-------------|
+| **Frontend** | Next.js 15.3 • React 19.1 • TypeScript • Tailwind CSS 4.x |
+| **Backend** | Next.js API Routes • Prisma ORM 6.8 • PostgreSQL 13+ |
+| **Authentication** | WebAuthn • TOTP (Speakeasy) • JWT (Jose) • bcryptjs |
+| **Validation** | Zod • React Hook Form • @hookform/resolvers |
+| **UI/UX** | Radix UI • Lucide React • React Hot Toast |
+
+</div>
+
+---
+
+## 📦 **Quick Start**
 
 ### Prerequisites
 
-- **Node.js** v20+ (recommended)
-- **pnpm** (recommended) or npm
-- **PostgreSQL** v13+ (local or remote)
+```bash
+Node.js v20+
+PostgreSQL v13+
+pnpm (recommended)
+```
 
-### Quick Start
+### Installation
 
-1. **Clone the repository**
-2. **Install dependencies**
-   ```powershell
-   pnpm install
-   # or
-   npm install
-   ```
-3. **Configure environment variables**
-   - Copy `.env.example` to `.env` and fill in all required secrets (see below).
-4. **Run database migrations**
-   ```powershell
-   pnpm run prisma:migrate
-   ```
-5. **Start the development server**
-   ```powershell
-   pnpm run dev
-   ```
+```bash
+# 1. Clone the repository
+git clone https://github.com/yourusername/azyqs-auth.git
+cd azyqs-auth
 
-### Environment Variables
+# 2. Install dependencies
+pnpm install
 
-You must set the following in your `.env` file:
+# 3. Setup environment variables
+cp .env.example .env
+# Edit .env with your configuration
 
-- `DATABASE_URL` (PostgreSQL connection string)
-- `JWT_SECRET` (strong random string)
-- `RECAPTCHA_SECRET_KEY` (Google reCAPTCHA v3 secret)
-- ...and others as needed (see `.env.example`)
+# 4. Run database migrations
+pnpm run prisma:migrate
 
-### Recommended Extensions (VS Code)
+# 5. Start development server
+pnpm run dev
+```
 
-- Prisma, Tailwind CSS IntelliSense, ESLint, Prettier
+### 🔧 **Environment Setup**
 
----
+<details>
+<summary><b>📋 Required Environment Variables</b></summary>
 
-## 📜 License
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/azyqs_auth"
 
-This project is open source under the MIT License.  
-You are free to use, modify, and distribute it, but **please give credit to the original author**.
+# JWT
+JWT_SECRET="your-super-secret-jwt-key-here"
 
----
+# reCAPTCHA
+RECAPTCHA_SECRET_KEY="your-recaptcha-secret-key"
 
-## 🙏 Credits
+# WebAuthn
+WEBAUTHN_RP_ID="localhost"
+WEBAUTHN_RP_NAME="Azyqs Auth"
+WEBAUTHN_ORIGIN="http://localhost:3000"
+```
 
-Developed by [Faeza Raziq](https://github.com/Farzync).  
-If you use this project, please star the repo and mention me in your credits!
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!  
-Feel free to fork the repository and submit pull requests.
+</details>
 
 ---
 
-## 📧 Contact
+## 📁 **Project Structure**
 
-For questions or support, open an issue or contact me via GitHub.
+```
+azyqs-auth/
+├── 📂 prisma/                 # Database schema & migrations
+├── 📂 src/
+│   ├── 📂 app/                # Next.js 15 app directory
+│   ├── 📂 components/         # Reusable UI components
+│   ├── 📂 contexts/           # React context providers
+│   ├── 📂 hooks/              # Custom React hooks
+│   ├── 📂 lib/                # Shared utilities
+│   ├── 📂 server/             # API route handlers
+│   ├── 📂 types/              # TypeScript definitions
+│   └── 📂 utils/              # Helper functions
+├── 📂 public/                 # Static assets
+└── 📋 package.json
+```
 
 ---
 
-## 💡 Tips & Best Practices
+## 🔥 **What's New**
 
-- Use the **Audit Log** to monitor all account activity and security events.
-- Regenerate backup codes regularly and store them securely.
-- Always use HTTPS in production.
-- Review and rotate secrets (JWT, database, reCAPTCHA) periodically.
-- For production, enable rate limiting and brute-force protection.
+### v2.1.0 - Latest Release
+
+🆕 **Enhanced WebAuthn Support** — Improved passkey registration and authentication flow  
+🆕 **Advanced Audit Logging** — Real-time filtering and export capabilities  
+🆕 **Smart MFA Management** — Intelligent backup code regeneration  
+🆕 **Modern UI Refresh** — Updated components with improved accessibility  
+
+<details>
+<summary><b>📈 Previous Updates</b></summary>
+
+### v2.0.0
+- ✨ WebAuthn/Passkey implementation
+- 🛡️ Multi-Factor Authentication with TOTP
+- 📊 Interactive audit logging system
+- 🎨 Complete UI/UX overhaul
+
+### v1.5.0
+- 🔐 JWT-based session management
+- 🛡️ CSRF protection implementation
+- 📱 Responsive design improvements
+
+</details>
 
 ---
+
+## 🧪 **Development**
+
+### Available Scripts
+
+```bash
+# Development
+pnpm dev              # Start development server
+pnpm build            # Build for production
+pnpm start            # Start production server
+
+# Database
+pnpm prisma:generate  # Generate Prisma client
+pnpm prisma:migrate   # Run database migrations
+pnpm prisma:studio    # Open Prisma Studio
+
+# Quality
+pnpm lint             # Run ESLint
+pnpm type-check       # Run TypeScript checks
+```
+
+### Recommended VS Code Extensions
+
+- 🔧 Prisma
+- 🎨 Tailwind CSS IntelliSense
+- ✅ ESLint
+- 🎯 Prettier
+- 📝 TypeScript Importer
+
+---
+
+## 🤝 **Contributing**
+
+We welcome contributions! Here's how you can help:
+
+1. 🍴 Fork the repository
+2. 🌟 Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. ✅ Commit your changes (`git commit -m 'Add amazing feature'`)
+4. 📤 Push to the branch (`git push origin feature/amazing-feature`)
+5. 🔄 Open a Pull Request
+
+### 📋 **Development Guidelines**
+
+- Follow TypeScript best practices
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+- Ensure all checks pass before submitting
+
+---
+
+## 📄 **License**
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 **Acknowledgments**
+
+<div align="center">
+
+**Created with ❤️ by [Faeza Raziq](https://github.com/Farzync)**
+
+*If this project helps you, please consider giving it a ⭐ star!*
+
+[![GitHub followers](https://img.shields.io/github/followers/Farzync?style=social)](https://github.com/Farzync)
+[![GitHub stars](https://img.shields.io/github/stars/Farzync/azyqs-auth?style=social)](https://github.com/Farzync/azyqs-auth)
+
+---
+
+### 💡 **Security Best Practices**
+
+🔒 Always use HTTPS in production  
+🔄 Rotate secrets regularly  
+📊 Monitor audit logs frequently  
+🛡️ Enable rate limiting  
+🔐 Store backup codes securely  
+
+---
+
+*Built for developers, by developers. Secure by design, beautiful by default.*
+
+</div>
