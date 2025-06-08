@@ -15,6 +15,7 @@ import { z } from "zod";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
+import { getClientIp } from "@/utils/getClientIp";
 
 /**
  * Authenticate a user and set a JWT cookie if credentials are valid.
@@ -29,6 +30,7 @@ import { createUserAuditLog } from "@/lib/auditLog";
  * - Sets authentication cookie
  * - Creates audit log entry for login attempt
  * - Logs errors on failure
+ * - Applies rate limiting: blocks after 5 failed attempts in 5 minutes per user and IP
  *
  * Example usage:
  * const result = await loginAction({ username, password, recaptchaToken, csrfToken });
@@ -46,6 +48,41 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
   }
 
   const { username, password, recaptchaToken, csrfToken } = parsed.data;
+
+  const userForRateLimit = await prisma.user.findUnique({
+    where: { username },
+  });
+  let clientIp = "";
+  try {
+    clientIp = (await getClientIp()) || "";
+  } catch {}
+  if (userForRateLimit && clientIp) {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const failedAttempts = await prisma.userAuditLog.count({
+      where: {
+        userId: userForRateLimit.id,
+        ipAddress: clientIp,
+        action: AuditLogAction.LOGIN,
+        success: false,
+        at: { gte: fiveMinutesAgo },
+      },
+    });
+    if (failedAttempts >= 3) {
+      await createUserAuditLog({
+        userId: userForRateLimit.id,
+        action: AuditLogAction.LOGIN,
+        details: `Blocked login due to too many failed attempts from IP ${clientIp}`,
+        method: AuditLogMethod.PASSWORD,
+        success: false,
+        errorMessage: "Too many failed login attempts",
+        at: new Date(),
+        ipAddress: clientIp,
+      });
+      return formatError(
+        "Too many failed login attempts. Please try again later."
+      );
+    }
+  }
 
   const csrfError = await requireValidCSRFToken(csrfToken);
   if (csrfError) {
