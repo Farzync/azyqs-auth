@@ -16,9 +16,10 @@ import { mfaVerifySchema } from "@/lib/zod/schemas/mfa.schema";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
+import { getClientIp } from "@/utils/getClientIp";
 
 /**
- * Verify a MFA code for 2FA login and issue a session token if valid.
+ * Verify an MFA code for 2FA login and issue a session token if valid.
  *
  * @param input {Object} - The input object containing MFA code and CSRF token
  * @param input.code {string} - The MFA code entered by the user
@@ -31,6 +32,7 @@ import { createUserAuditLog } from "@/lib/auditLog";
  * - Issues JWT and sets cookie if valid
  * - Creates audit log entry for MFA verification
  * - Logs errors on failure
+ * - Applies rate limiting: blocks after 5 failed attempts in 5 minutes per user and IP
  *
  * Example usage:
  * const result = await verifyTOTPAction({ code, csrfToken });
@@ -42,6 +44,39 @@ export async function verifyMFAAction(input: {
   const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
   const tempUserId = await getCookie("temp_user_id");
   const timestamp = new Date();
+
+  let clientIp = "";
+  try {
+    clientIp = (await getClientIp()) || "";
+  } catch {}
+  if (tempUserId && clientIp) {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const failedAttempts = await prisma.userAuditLog.count({
+      where: {
+        userId: tempUserId,
+        ipAddress: clientIp,
+        action: AuditLogAction.LOGIN,
+        method: AuditLogMethod.MFA,
+        success: false,
+        at: { gte: fiveMinutesAgo },
+      },
+    });
+    if (failedAttempts >= 5) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Blocked MFA verification due to too many failed attempts from IP ${clientIp}`,
+        method: AuditLogMethod.MFA,
+        success: false,
+        errorMessage: "Too many failed MFA attempts",
+        at: new Date(),
+        ipAddress: clientIp,
+      });
+      return formatError(
+        "Terlalu banyak percobaan verifikasi MFA gagal. Silakan coba lagi nanti."
+      );
+    }
+  }
 
   let auditUserId = tempUserId;
   if (!tempUserId) {
@@ -81,6 +116,7 @@ export async function verifyMFAAction(input: {
         success: false,
         errorMessage: "Validation error",
         at: timestamp,
+        ipAddress: clientIp,
       });
       return formatError(
         "Validation error",
@@ -100,6 +136,7 @@ export async function verifyMFAAction(input: {
         success: false,
         errorMessage: "Invalid CSRF token",
         at: timestamp,
+        ipAddress: clientIp,
       });
       return formatError(
         "Invalid CSRF token. Please refresh the page and try again."
@@ -124,8 +161,8 @@ export async function verifyMFAAction(input: {
         success: false,
         errorMessage: "MFA not enabled",
         at: timestamp,
+        ipAddress: clientIp,
       });
-
       return formatError("MFA not enabled");
     }
 
@@ -139,8 +176,8 @@ export async function verifyMFAAction(input: {
         success: false,
         errorMessage: "Invalid MFA code",
         at: timestamp,
+        ipAddress: clientIp,
       });
-
       return formatError("Invalid MFA code");
     }
 
@@ -160,19 +197,18 @@ export async function verifyMFAAction(input: {
       method: AuditLogMethod.MFA,
       success: true,
       at: timestamp,
+      ipAddress: clientIp,
     });
 
     return { success: true };
   } catch (error) {
     logError("Verify MFA", error);
-
     try {
       if (tempUserId) {
         const user = await prisma.user.findUnique({
           where: { id: tempUserId },
           select: { username: true },
         });
-
         await createUserAuditLog({
           userId: tempUserId,
           action: AuditLogAction.LOGIN,
@@ -182,12 +218,12 @@ export async function verifyMFAAction(input: {
           errorMessage:
             error instanceof Error ? error.message : "Unknown error",
           at: timestamp,
+          ipAddress: clientIp,
         });
       }
     } catch (auditError) {
       logError("verifyTOTPAction - audit log creation failed", auditError);
     }
-
     return formatError("Failed to verify MFA");
   }
 }
