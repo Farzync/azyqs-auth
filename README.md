@@ -2,7 +2,7 @@
 
 # 🔐 Azyqs-Auth
 
-### *Next-Generation Authentication Platform*
+### _Next-Generation Authentication Platform_
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
@@ -10,7 +10,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-6.8-2D3748?style=for-the-badge&logo=prisma)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-336791?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
 
-*Production-ready authentication with WebAuthn, MFA, and comprehensive audit logging*
+_Production-ready authentication with WebAuthn, MFA, and comprehensive audit logging_
 
 [🚀 Live Demo](#) • [📖 Documentation](#) • [🐛 Report Bug](#) • [💡 Request Feature](#)
 
@@ -29,6 +29,7 @@ Azyqs-Auth isn't just another auth starter—it's a complete authentication ecos
 🔍 **Real-time Audit Logging** — Monitor every user action with detailed device, IP, and error tracking  
 🔑 **Passwordless Authentication** — WebAuthn/Passkey support for seamless user experience  
 🛡️ **Multi-Factor Security** — TOTP-based MFA with intelligent backup code management  
+🚦 **Rate Limiting on Login/MFA/Backup Code** — Prevent brute-force attacks with per-user and per-IP limits  
 🎨 **Modern UI/UX** — Beautiful, accessible interface built with Radix UI and Tailwind CSS
 
 ---
@@ -40,6 +41,7 @@ Azyqs-Auth isn't just another auth starter—it's a complete authentication ecos
 <td width="50%">
 
 ### 🔐 **Authentication**
+
 - ✅ Traditional login (username/email/password)
 - ✅ Passwordless WebAuthn (passkeys)
 - ✅ TOTP-based Multi-Factor Authentication
@@ -50,6 +52,7 @@ Azyqs-Auth isn't just another auth starter—it's a complete authentication ecos
 <td width="50%">
 
 ### 🛡️ **Security & Management**
+
 - ✅ Interactive real-time audit logging
 - ✅ CSRF protection & rate limiting
 - ✅ reCAPTCHA v3 integration
@@ -66,13 +69,13 @@ Azyqs-Auth isn't just another auth starter—it's a complete authentication ecos
 
 <div align="center">
 
-| Category | Technologies |
-|----------|-------------|
-| **Frontend** | Next.js 15.3 • React 19.1 • TypeScript • Tailwind CSS 4.x |
-| **Backend** | Next.js API Routes • Prisma ORM 6.8 • PostgreSQL 13+ |
-| **Authentication** | WebAuthn • TOTP (Speakeasy) • JWT (Jose) • bcryptjs |
-| **Validation** | Zod • React Hook Form • @hookform/resolvers |
-| **UI/UX** | Radix UI • Lucide React • React Hot Toast |
+| Category           | Technologies                                              |
+| ------------------ | --------------------------------------------------------- |
+| **Frontend**       | Next.js 15.3 • React 19.1 • TypeScript • Tailwind CSS 4.x |
+| **Backend**        | Next.js API Routes • Prisma ORM 6.8 • PostgreSQL 13+      |
+| **Authentication** | WebAuthn • TOTP (Speakeasy) • JWT (Jose) • bcryptjs       |
+| **Validation**     | Zod • React Hook Form • @hookform/resolvers               |
+| **UI/UX**          | Radix UI • Lucide React • React Hot Toast                 |
 
 </div>
 
@@ -156,23 +159,30 @@ azyqs-auth/
 
 ## 🔥 **What's New**
 
-### v2.1.0 - Latest Release
+### v2.1.1 - Security Update
 
-🆕 **Enhanced WebAuthn Support** — Improved passkey registration and authentication flow  
-🆕 **Advanced Audit Logging** — Real-time filtering and export capabilities  
-🆕 **Smart MFA Management** — Intelligent backup code regeneration  
-🆕 **Modern UI Refresh** — Updated components with improved accessibility  
+- 🚦 **Rate limiting for Login, MFA and backup code verification**  
+  Now, after 5 failed attempts in 5 minutes (per user and IP), further Login, MFA or backup code verification is blocked temporarily. This helps prevent brute-force attacks and improves overall security.
 
 <details>
 <summary><b>📈 Previous Updates</b></summary>
 
+### v2.1.0
+
+- 🆕 Enhanced WebAuthn Support — Improved passkey registration and authentication flow
+- 🆕 Advanced Audit Logging — Real-time filtering and export capabilities
+- 🆕 Smart MFA Management — Intelligent backup code regeneration
+- 🆕 Modern UI Refresh — Updated components with improved accessibility
+
 ### v2.0.0
+
 - ✨ WebAuthn/Passkey implementation
 - 🛡️ Multi-Factor Authentication with TOTP
 - 📊 Interactive audit logging system
 - 🎨 Complete UI/UX overhaul
 
 ### v1.5.0
+
 - 🔐 JWT-based session management
 - 🛡️ CSRF protection implementation
 - 📱 Responsive design improvements
@@ -243,7 +253,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Created with ❤️ by [Faeza Raziq](https://github.com/Farzync)**
 
-*If this project helps you, please consider giving it a ⭐ star!*
+_If this project helps you, please consider giving it a ⭐ star!_
 
 [![GitHub followers](https://img.shields.io/github/followers/Farzync?style=social)](https://github.com/Farzync)
 [![GitHub stars](https://img.shields.io/github/stars/Farzync/azyqs-auth?style=social)](https://github.com/Farzync/azyqs-auth)
@@ -256,10 +266,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 🔄 Rotate secrets regularly  
 📊 Monitor audit logs frequently  
 🛡️ Enable rate limiting  
-🔐 Store backup codes securely  
+🔐 Store backup codes securely
 
 ---
 
-*Built for developers, by developers. Secure by design, beautiful by default.*
+_Built for developers, by developers. Secure by design, beautiful by default._
 
 </div>
