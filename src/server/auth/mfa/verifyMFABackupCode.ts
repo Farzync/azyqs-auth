@@ -16,9 +16,10 @@ import { prisma } from "@/lib/db";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { TokenPayload } from "@/types/token";
 import { mfaBackupCodeVerifySchema } from "@/lib/zod/schemas/mfa.schema";
+import { getClientIp } from "@/utils/getClientIp";
 
 /**
- * Verify a MFA backup code for 2FA login and issue a session token if valid.
+ * Verify an MFA backup code for 2FA login and issue a session token if valid.
  *
  * @param input {Object} - The input object containing backup code and CSRF token
  * @param input.code {string} - The backup code entered by the user
@@ -31,6 +32,7 @@ import { mfaBackupCodeVerifySchema } from "@/lib/zod/schemas/mfa.schema";
  * - Issues JWT and sets cookie if valid
  * - Deletes used backup code
  * - Logs errors on failure
+ * - Applies rate limiting: blocks after 5 failed attempts in 5 minutes per user and IP
  *
  * Example usage:
  * const result = await verifyTOTPBackupAction({ code, csrfToken });
@@ -69,6 +71,40 @@ export async function verifyMFABackupAction(input: {
   }
 
   const timestamp = new Date();
+
+  let clientIp = "";
+  try {
+    clientIp = (await getClientIp()) || "";
+  } catch {}
+  if (tempUserId && clientIp) {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const failedAttempts = await prisma.userAuditLog.count({
+      where: {
+        userId: tempUserId,
+        ipAddress: clientIp,
+        action: AuditLogAction.LOGIN,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: false,
+        at: { gte: fiveMinutesAgo },
+      },
+    });
+    if (failedAttempts >= 5) {
+      await createUserAuditLog({
+        userId: tempUserId,
+        action: AuditLogAction.LOGIN,
+        details: `Blocked backup code verification due to too many failed attempts from IP ${clientIp}`,
+        method: AuditLogMethod.MFA_BACKUP,
+        success: false,
+        errorMessage: "Too many failed backup code attempts",
+        at: new Date(),
+        ipAddress: clientIp,
+      });
+      return formatError(
+        "Terlalu banyak percobaan verifikasi backup code gagal. Silakan coba lagi nanti."
+      );
+    }
+  }
+
   try {
     const parsed = mfaBackupCodeVerifySchema.safeParse(input);
     if (!parsed.success) {
@@ -80,6 +116,7 @@ export async function verifyMFABackupAction(input: {
         success: false,
         errorMessage: "Validation error",
         at: timestamp,
+        ipAddress: clientIp,
       });
       return formatError(
         "Validation error",
@@ -91,7 +128,6 @@ export async function verifyMFABackupAction(input: {
 
     const isCSRFValid = await validateCSRFToken(csrfToken);
     if (!isCSRFValid) {
-      // Audit log for CSRF error
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
@@ -100,6 +136,7 @@ export async function verifyMFABackupAction(input: {
         success: false,
         errorMessage: "Invalid CSRF token",
         at: timestamp,
+        ipAddress: clientIp,
       });
       return formatError(
         "Invalid CSRF token. Please refresh the page and try again."
@@ -119,6 +156,7 @@ export async function verifyMFABackupAction(input: {
         success: false,
         errorMessage: "MFA not enabled",
         at: timestamp,
+        ipAddress: clientIp,
       });
       return formatError("MFA not enabled");
     }
@@ -151,6 +189,7 @@ export async function verifyMFABackupAction(input: {
         method: AuditLogMethod.MFA_BACKUP,
         success: true,
         at: timestamp,
+        ipAddress: clientIp,
       });
       return { success: true };
     } else {
@@ -162,6 +201,7 @@ export async function verifyMFABackupAction(input: {
         success: false,
         errorMessage: "Invalid backup code",
         at: timestamp,
+        ipAddress: clientIp,
       });
       return formatError("Invalid backup code");
     }
@@ -178,6 +218,7 @@ export async function verifyMFABackupAction(input: {
           errorMessage:
             error instanceof Error ? error.message : "Unknown error",
           at: timestamp,
+          ipAddress: clientIp,
         });
       }
     } catch (auditError) {

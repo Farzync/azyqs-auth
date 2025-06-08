@@ -2,14 +2,14 @@
 
 # 🛡️ Security Overview
 
-### *Enterprise-Grade Security Architecture*
+### _Enterprise-Grade Security Architecture_
 
 [![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-green?style=for-the-badge&logo=shield)](https://github.com/Farzync/azyqs-auth)
 [![Authentication](https://img.shields.io/badge/Auth-Multi--Factor-blue?style=for-the-badge&logo=key)](https://github.com/Farzync/azyqs-auth)
 [![WebAuthn](https://img.shields.io/badge/WebAuthn-Passwordless-purple?style=for-the-badge&logo=webauthn)](https://github.com/Farzync/azyqs-auth)
 [![Audit](https://img.shields.io/badge/Audit-Real--time-orange?style=for-the-badge&logo=activity)](https://github.com/Farzync/azyqs-auth)
 
-*Comprehensive security model with real-time monitoring and advanced threat protection*
+_Comprehensive security model with real-time monitoring and advanced threat protection_
 
 [🔐 Authentication Flow](#-authentication-flow) • [🛡️ Security Features](#️-security-features) • [📊 Audit System](#-audit-system) • [💡 Best Practices](#-best-practices)
 
@@ -31,8 +31,9 @@ Azyqs-Auth implements a **zero-trust security model** with comprehensive logging
 
 🔒 **Zero-Trust Architecture**  
 🛡️ **Multi-Factor Authentication**  
+🚦 **Rate Limiting on Login/MFA/Backup Code**  
 🔑 **Passwordless Authentication**  
-📊 **Real-time Audit Logging**  
+📊 **Real-time Audit Logging**
 
 </td>
 <td width="50%">
@@ -40,7 +41,7 @@ Azyqs-Auth implements a **zero-trust security model** with comprehensive logging
 🚫 **CSRF Protection**  
 🤖 **Bot Prevention (reCAPTCHA)**  
 🔐 **Secure Session Management**  
-⚡ **Threat Detection & Response**  
+⚡ **Threat Detection & Response**
 
 </td>
 </tr>
@@ -56,6 +57,7 @@ Azyqs-Auth implements a **zero-trust security model** with comprehensive logging
 <summary><b>🔍 Security Implementation Details</b></summary>
 
 **Input Validation & Protection:**
+
 ```typescript
 ✅ Zod schema validation (server-side, type-safe)
 ✅ CSRF token verification required
@@ -65,6 +67,7 @@ Azyqs-Auth implements a **zero-trust security model** with comprehensive logging
 ```
 
 **Security Measures:**
+
 - 🔐 **Password Hashing:** bcryptjs with strong salt rounds
 - 🚫 **Rate Limiting:** Prevent registration abuse
 - 📊 **Audit Logging:** All attempts logged with device/IP tracking
@@ -73,6 +76,7 @@ Azyqs-Auth implements a **zero-trust security model** with comprehensive logging
 </details>
 
 **Flow Diagram:**
+
 ```
 Registration Request → CSRF Check → reCAPTCHA → Validation → Hash Password → Store User → Audit Log
 ```
@@ -85,6 +89,7 @@ Registration Request → CSRF Check → reCAPTCHA → Validation → Hash Passwo
 <summary><b>🔍 Multi-Layer Authentication Process</b></summary>
 
 **Primary Authentication:**
+
 ```typescript
 ✅ Credential validation (username/email + password)
 ✅ CSRF token verification
@@ -93,6 +98,7 @@ Registration Request → CSRF Check → reCAPTCHA → Validation → Hash Passwo
 ```
 
 **Secondary Authentication (if enabled):**
+
 ```typescript
 ✅ TOTP code verification (6-digit)
 ✅ Backup code verification (one-time use)
@@ -100,6 +106,7 @@ Registration Request → CSRF Check → reCAPTCHA → Validation → Hash Passwo
 ```
 
 **Session Management:**
+
 ```typescript
 ✅ JWT token generation with secure claims
 ✅ HttpOnly, Secure cookie storage
@@ -110,11 +117,11 @@ Registration Request → CSRF Check → reCAPTCHA → Validation → Hash Passwo
 
 **Authentication Matrix:**
 
-| Method | Primary Auth | Secondary Auth | Passwordless |
-|--------|-------------|----------------|-------------|
-| **Traditional** | ✅ Password | ❌ | ❌ |
-| **MFA Enabled** | ✅ Password | ✅ TOTP/Backup | ❌ |
-| **WebAuthn** | ❌ | ❌ | ✅ Passkey |
+| Method          | Primary Auth | Secondary Auth | Passwordless |
+| --------------- | ------------ | -------------- | ------------ |
+| **Traditional** | ✅ Password  | ❌             | ❌           |
+| **MFA Enabled** | ✅ Password  | ✅ TOTP/Backup | ❌           |
+| **WebAuthn**    | ❌           | ❌             | ✅ Passkey   |
 
 ---
 
@@ -127,6 +134,7 @@ Registration Request → CSRF Check → reCAPTCHA → Validation → Hash Passwo
 <td width="60%">
 
 **🚀 TOTP Setup Flow:**
+
 1. Generate cryptographic secret
 2. Display QR code for authenticator app
 3. Verify setup with test code
@@ -137,6 +145,7 @@ Registration Request → CSRF Check → reCAPTCHA → Validation → Hash Passwo
 <td width="40%">
 
 **🛡️ Security Features:**
+
 - ✅ Time-based codes (30s window)
 - ✅ One-time backup codes
 - ✅ Secure secret generation
@@ -160,6 +169,7 @@ graph TD
 ```
 
 **Backup Code Management:**
+
 - 🔐 **Secure Generation:** Cryptographically strong codes
 - 🚫 **One-Time Use:** Deleted after successful use
 - 🔄 **Smart Regeneration:** Only available when MFA is active
@@ -175,6 +185,7 @@ graph TD
 <summary><b>🔧 Technical Implementation</b></summary>
 
 **Client-Side Process:**
+
 ```javascript
 1. Generate WebAuthn challenge
 2. User gesture (biometric/PIN)
@@ -183,6 +194,7 @@ graph TD
 ```
 
 **Server-Side Verification:**
+
 ```javascript
 1. Validate attestation format
 2. Verify challenge response
@@ -194,12 +206,12 @@ graph TD
 
 #### Authentication Benefits
 
-| Traditional Login | WebAuthn Login |
-|------------------|----------------|
-| Password + MFA | Biometric/PIN only |
-| Multiple steps | Single gesture |
+| Traditional Login   | WebAuthn Login     |
+| ------------------- | ------------------ |
+| Password + MFA      | Biometric/PIN only |
+| Multiple steps      | Single gesture     |
 | Phishing vulnerable | Phishing resistant |
-| Password management | No passwords |
+| Password management | No passwords       |
 
 ---
 
@@ -209,39 +221,42 @@ graph TD
 
 <div align="center">
 
-| Security Layer | Implementation | Protection Level |
-|---------------|----------------|------------------|
-| **🚫 CSRF Protection** | Token-based validation | High |
-| **🤖 Bot Prevention** | reCAPTCHA v3 | Medium |
-| **🔐 Password Security** | bcryptjs + salt | High |
-| **🍪 Session Security** | JWT + HttpOnly cookies | High |
-| **📊 Audit Logging** | Real-time monitoring | Critical |
-| **⚡ Input Validation** | Zod schemas | High |
+| Security Layer           | Implementation                                                    | Protection Level |
+| ------------------------ | ----------------------------------------------------------------- | ---------------- |
+| **🚦 Rate Limiting**     | Login, MFA & backup code: 5 failed attempts per 5 min per user/IP | High             |
+| **🚫 CSRF Protection**   | Token-based validation                                            | High             |
+| **🤖 Bot Prevention**    | reCAPTCHA v3                                                      | Medium           |
+| **🔐 Password Security** | bcryptjs + salt                                                   | High             |
+| **🍪 Session Security**  | JWT + HttpOnly cookies                                            | High             |
+| **📊 Audit Logging**     | Real-time monitoring                                              | Critical         |
+| **⚡ Input Validation**  | Zod schemas                                                       | High             |
 
 </div>
 
 ### Advanced Security Measures
 
 #### 🔒 **Encryption & Hashing**
+
 ```typescript
 // Password Security
 ✅ bcryptjs with 12+ salt rounds
 ✅ Secure random salt generation
 ⏳ Timing attack prevention
 
-// Session Security  
+// Session Security
 ✅ JWT with HS256 algorithm
 ✅ Secure secret key (256-bit+)
 ⏳ Short expiration times
 ```
 
 #### 🛡️ **Attack Prevention**
+
 ```typescript
 // Common Attack Vectors
 ✅ SQL Injection (Prisma ORM protection)
 ✅ XSS (Input sanitization + CSP)
 ✅ CSRF (Token validation)
-⏳ Brute Force (Rate limiting)
+✅ Brute Force (Rate limiting on login, MFA, and backup code verification)
 ⏳ Session Fixation (Token rotation)
 ```
 
@@ -286,12 +301,14 @@ graph TD
 #### Interactive Audit Features
 
 **🔍 Real-time Filtering:**
+
 ```typescript
 ✅ Filter by latest date range
 ✅ Filter by success/failure
 ```
 
 **📈 Security Analytics:**
+
 - Failed login attempt patterns
 - Unusual access locations
 - Device fingerprinting
@@ -319,10 +336,11 @@ graph TD
 ### Database Security
 
 **🔒 Secure Data Storage:**
+
 ```sql
 -- Sensitive data protection
 ✅ Passwords: bcrypt hashed
-✅ Backup codes: SHA-256 hashed  
+✅ Backup codes: SHA-256 hashed
 ✅ TOTP secrets: AES encrypted
 ✅ Session tokens: Signed JWTs
 ✅ Audit logs: Immutable records
@@ -336,20 +354,21 @@ graph TD
 
 <div align="center">
 
-| Threat Type | Detection Method | Response |
-|-------------|------------------|----------|
-| **🚨 Brute Force** | Failed attempt tracking | Account lockout |
-| **🌍 Location Anomaly** | IP geolocation analysis | Email notification |
-| **🔓 Credential Stuffing** | Pattern recognition | Enhanced verification |
+| Threat Type                              | Detection Method                                  | Response              |
+| ---------------------------------------- | ------------------------------------------------- | --------------------- |
+| **🚨 Brute Force**                       | Failed attempt tracking (login, MFA, backup code) | Audit Logged          |
+| **🌍 Location Anomaly** (Coming Soon)    | IP geolocation analysis                           | Email notification    |
+| **🔓 Credential Stuffing** (Coming Soon) | Pattern recognition                               | Enhanced verification |
 
 </div>
 
 ### Security Alerts
 
 **Real-time Notifications:**
+
 - 📧 **Email Alerts:** Suspicious login attempts (⏳Coming Soon⏳)
 - 📱 **In-app Notifications:** Security setting changes (⏳Coming Soon⏳)
- 
+
 ---
 
 ## 💡 **Best Practices & Recommendations**
@@ -361,6 +380,7 @@ graph TD
 <td width="50%">
 
 **🔒 Production Checklist:**
+
 - ✅ Always use HTTPS (TLS 1.3+)
 - ✅ Strong JWT secrets (256-bit+)
 - ✅ Environment variable protection
@@ -371,6 +391,7 @@ graph TD
 <td width="50%">
 
 **⚡ Performance Security:**
+
 - ✅ Rate limiting implementation
 - ✅ DDoS protection setup
 - ✅ CDN security headers
@@ -384,16 +405,18 @@ graph TD
 ### 📊 **Monitoring & Maintenance**
 
 **Daily Operations:**
+
 ```bash
 # Security monitoring commands
 ✅ Monitor audit logs for anomalies
-✅ Check failed authentication rates  
+✅ Check failed authentication rates
 ✅ Review user access patterns
 ✅ Validate security configurations
 ✅ Update threat intelligence feeds
 ```
 
 **Regular Security Tasks:**
+
 - 🔄 **Weekly:** Review audit logs and user reports
 - 🔄 **Monthly:** Rotate secrets and update dependencies
 - 🔄 **Quarterly:** Security audit and penetration testing
@@ -402,6 +425,7 @@ graph TD
 ### 🎯 **User Security Education**
 
 **Recommended User Practices:**
+
 - 🔐 Use strong, unique passwords
 - 📱 Enable MFA on all accounts
 - 🗝️ Register multiple passkeys
@@ -414,7 +438,7 @@ graph TD
 
 ## 🔍 **Security Audit Trail**
 
-*Every action is logged. Every event is tracked. Complete transparency for complete security.*
+_Every action is logged. Every event is tracked. Complete transparency for complete security._
 
 **📈 Continuous Improvement:** This security model is continuously updated based on the latest threat intelligence and security best practices.
 
@@ -430,6 +454,6 @@ Found a security vulnerability? Please report it responsibly:
 
 ---
 
-*"In security we trust, through transparency we verify."*
+_"In security we trust, through transparency we verify."_
 
 </div>
