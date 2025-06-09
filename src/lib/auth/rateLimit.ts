@@ -22,7 +22,14 @@ export async function checkRateLimit(
   maxAttempts: number
 ): Promise<boolean> {
   const since = new Date(Date.now() - windowMs);
-  const where: any = {
+  const where: {
+    userId: string;
+    ipAddress: string;
+    action: AuditLogAction;
+    success: false;
+    at: { gte: Date };
+    method?: AuditLogMethod;
+  } = {
     userId,
     ipAddress: ip,
     action,
