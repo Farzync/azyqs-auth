@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "@/lib/zod/schemas/login.schema";
-import { loginAction, getCSRFToken } from "@/server/auth";
+import { loginAction } from "@/server/auth";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
+import { useFormErrorHandler } from "@/hooks/useFormErrorHandler";
 import { getProfile } from "@/server/user";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -46,9 +48,7 @@ function ErrorAlert({ message }: { message?: string }) {
 export function LoginForm() {
   const router = useRouter();
   const { setUser } = useAuth();
-  const [errorMsg, setErrorMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [csrfToken, setCsrfToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [showTOTP, setShowTOTP] = useState(false);
@@ -98,6 +98,11 @@ export function LoginForm() {
     },
   });
 
+  // --- Custom Hooks ---
+  const { csrfToken, csrfError } =
+    useCsrfToken<keyof LoginFormValues>(setValue);
+  const { errorMsg, setErrorMsg, clearErrorMsg } = useFormErrorHandler();
+
   const watchedFields = watch();
 
   useEffect(() => {
@@ -112,29 +117,16 @@ export function LoginForm() {
     setIsFormValid(Boolean(hasRequiredFields && hasNoErrors && isValid));
   }, [watchedFields, errors, isValid, recaptchaToken, csrfToken]);
 
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      try {
-        const token = await getCSRFToken();
-        setCsrfToken(token);
-        setValue("csrfToken", token, { shouldValidate: true });
-      } catch (err) {
-        console.error("Failed to fetch CSRF token:", err);
-        setErrorMsg("Failed to get CSRF token. Please refresh the page.");
-      }
-    };
-
-    fetchCsrfToken();
-  }, [setValue]);
-
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
   const onSubmit = async (data: LoginFormValues) => {
-    setErrorMsg("");
+    clearErrorMsg();
     setIsLoading(true);
 
     if (!csrfToken) {
-      setErrorMsg("CSRF token not found. Please refresh the page.");
+      setErrorMsg(
+        csrfError || "CSRF token not found. Please refresh the page."
+      );
       setIsLoading(false);
       return;
     }
@@ -214,7 +206,7 @@ export function LoginForm() {
     setLoginData(null);
     loginViaMFA.current = false;
     resetRecaptcha();
-    setErrorMsg("");
+    clearErrorMsg();
   };
 
   if (showTOTP && loginData) {
@@ -252,7 +244,7 @@ export function LoginForm() {
           </p>
         </div>
 
-        <ErrorAlert message={passkeyError || errorMsg} />
+        <ErrorAlert message={passkeyError || errorMsg || csrfError} />
 
         <div className="flex flex-col gap-4 sm:gap-5">
           <div className="space-y-1.5">
