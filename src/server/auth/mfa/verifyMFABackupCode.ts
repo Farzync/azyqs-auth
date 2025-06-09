@@ -17,6 +17,7 @@ import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { TokenPayload } from "@/types/token";
 import { mfaBackupCodeVerifySchema } from "@/lib/zod/schemas/mfa.schema";
 import { getClientIp } from "@/utils/getClientIp";
+import { checkRateLimit } from "@/lib/auth/rateLimit";
 
 /**
  * Verify an MFA backup code for 2FA login and issue a session token if valid.
@@ -77,18 +78,15 @@ export async function verifyMFABackupAction(input: {
     clientIp = (await getClientIp()) || "";
   } catch {}
   if (tempUserId && clientIp) {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const failedAttempts = await prisma.userAuditLog.count({
-      where: {
-        userId: tempUserId,
-        ipAddress: clientIp,
-        action: AuditLogAction.LOGIN,
-        method: AuditLogMethod.MFA_BACKUP,
-        success: false,
-        at: { gte: fiveMinutesAgo },
-      },
-    });
-    if (failedAttempts >= 5) {
+    const isRateLimited = await checkRateLimit(
+      tempUserId,
+      clientIp,
+      AuditLogAction.LOGIN,
+      AuditLogMethod.MFA_BACKUP,
+      5 * 60 * 1000,
+      5
+    );
+    if (isRateLimited) {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,

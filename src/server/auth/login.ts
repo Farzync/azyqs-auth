@@ -16,6 +16,7 @@ import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 import { getClientIp } from "@/utils/getClientIp";
+import { checkRateLimit } from "@/lib/auth/rateLimit";
 
 /**
  * Authenticate a user and set a JWT cookie if credentials are valid.
@@ -57,17 +58,15 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
     clientIp = (await getClientIp()) || "";
   } catch {}
   if (userForRateLimit && clientIp) {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const failedAttempts = await prisma.userAuditLog.count({
-      where: {
-        userId: userForRateLimit.id,
-        ipAddress: clientIp,
-        action: AuditLogAction.LOGIN,
-        success: false,
-        at: { gte: fiveMinutesAgo },
-      },
-    });
-    if (failedAttempts >= 3) {
+    const isRateLimited = await checkRateLimit(
+      userForRateLimit.id,
+      clientIp,
+      AuditLogAction.LOGIN,
+      AuditLogMethod.PASSWORD,
+      5 * 60 * 1000,
+      5
+    );
+    if (isRateLimited) {
       await createUserAuditLog({
         userId: userForRateLimit.id,
         action: AuditLogAction.LOGIN,

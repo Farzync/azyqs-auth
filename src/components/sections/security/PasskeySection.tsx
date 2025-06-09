@@ -6,27 +6,23 @@ import { UserLock, Plus, List } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Passkey } from "@/types/passkey";
 import { registerPasskey } from "@/lib/auth/webauthnClient";
-import { deleteCredentialAction } from "@/server/auth/webauthn/deleteCredential";
 import { generatePasskeyOptionsAction } from "@/server/auth/webauthn/generatePasskeyOptions";
-import { getUserCredentialsAction } from "@/server/auth/webauthn/getUserCredentials";
 import { registerPasskeyAction } from "@/server/auth/webauthn/registerPasskey";
 import { getDeviceInfo } from "@/utils/getDeviceInfo";
-import { ShowAllPasskeysDialog } from "@/components/dialogs/ShowAllPasskeysDialog";
 
 interface PasskeySectionProps {
   passkeys: Passkey[];
   isLoading: boolean;
   onPasskeysChange: () => Promise<Passkey[]>;
+  onShowAllPasskeys?: () => void;
 }
-
 export function PasskeySection({
   passkeys,
   isLoading,
   onPasskeysChange,
+  onShowAllPasskeys,
 }: PasskeySectionProps) {
   const [registering, setRegistering] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [showAllDialog, setShowAllDialog] = useState(false);
 
   const handleRegisterPasskey = async () => {
     setRegistering(true);
@@ -54,38 +50,6 @@ export function PasskeySection({
     } finally {
       setRegistering(false);
     }
-  };
-
-  const handleDeletePasskey = async (id: string) => {
-    setDeletingId(id);
-    try {
-      const res = await deleteCredentialAction(id);
-
-      if ("error" in res) {
-        throw new Error(res.error || "Failed to delete passkey");
-      }
-
-      toast.success("Passkey deleted successfully!");
-      await onPasskeysChange();
-    } catch {
-      toast.error("Failed to delete passkey");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const fetchPasskeysForDialog = async () => {
-    const result = await getUserCredentialsAction();
-    if ("error" in result) return [];
-    return (result.credentials || []).map((pk) => ({
-      ...pk,
-      createdAt:
-        typeof pk.createdAt === "string"
-          ? pk.createdAt
-          : pk.createdAt && typeof pk.createdAt.toISOString === "function"
-          ? pk.createdAt.toISOString()
-          : String(pk.createdAt),
-    })) as Passkey[];
   };
 
   return (
@@ -135,7 +99,7 @@ export function PasskeySection({
 
           <Button
             variant="outline"
-            onClick={() => setShowAllDialog(true)}
+            onClick={onShowAllPasskeys}
             className="flex items-center gap-2 h-10 transition-all"
             disabled={isLoading}
           >
@@ -149,14 +113,6 @@ export function PasskeySection({
           </Button>
         </div>
       </div>
-
-      <ShowAllPasskeysDialog
-        open={showAllDialog}
-        onOpenChange={setShowAllDialog}
-        fetchPasskeys={fetchPasskeysForDialog}
-        onDelete={handleDeletePasskey}
-        deletingId={deletingId}
-      />
     </>
   );
 }

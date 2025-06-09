@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { usePasskeys } from "@/hooks/usePasskeys";
 import {
   Dialog,
   DialogContent,
@@ -8,56 +9,36 @@ import {
 } from "@/components/ui/dialog";
 import { PasskeyList } from "@/components/dialogs/PasskeyListDialog";
 import { Shield } from "lucide-react";
-import type { Passkey } from "@/types/passkey";
 
-interface ShowAllPasskeysDialogProps {
+export interface ShowAllPasskeysDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fetchPasskeys: () => Promise<Passkey[]>;
-  onDelete: (id: string) => Promise<void>;
-  deletingId?: string | null;
+  onPasskeyChanged?: () => void;
 }
 
-export function ShowAllPasskeysDialog({
+const ShowAllPasskeysDialog = ({
   open,
   onOpenChange,
-  fetchPasskeys,
-  onDelete,
-  deletingId,
-}: ShowAllPasskeysDialogProps) {
-  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
+  onPasskeyChanged,
+}: ShowAllPasskeysDialogProps) => {
+  const {
+    passkeys,
+    isLoading,
+    deletingId,
+    error,
+    fetchPasskeys,
+    deletePasskey,
+  } = usePasskeys();
+
+  const handleDeletePasskey = async (id: string) => {
+    await deletePasskey(id);
+    if (onPasskeyChanged) onPasskeyChanged();
+  };
 
   useEffect(() => {
-    if (open && !hasFetched) {
-      setIsLoading(true);
-      setError(null);
-      fetchPasskeys()
-        .then((result) => setPasskeys(result))
-        .catch((e) => setError(e?.message || "Failed to load passkeys"))
-        .finally(() => {
-          setIsLoading(false);
-          setHasFetched(true);
-        });
-    }
-    if (!open) {
-      setHasFetched(false);
-      setPasskeys([]);
-      setError(null);
-    }
-  }, [open, fetchPasskeys, hasFetched]);
-
-  useEffect(() => {
-    if (open && hasFetched && !deletingId) {
-      setIsLoading(true);
-      fetchPasskeys()
-        .then((result) => setPasskeys(result))
-        .catch((e) => setError(e?.message || "Failed to load passkeys"))
-        .finally(() => setIsLoading(false));
-    }
-  }, [deletingId, open, fetchPasskeys, hasFetched]);
+    if (open) fetchPasskeys();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,7 +62,7 @@ export function ShowAllPasskeysDialog({
             <PasskeyList
               passkeys={passkeys}
               isLoading={isLoading}
-              onDelete={onDelete}
+              onDelete={handleDeletePasskey}
               deletingId={deletingId}
               error={error}
               showPasskeyNameInConfirm={true}
@@ -92,4 +73,6 @@ export function ShowAllPasskeysDialog({
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export { ShowAllPasskeysDialog };
