@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,11 +17,9 @@ import {
   mfaVerifySchema,
 } from "@/lib/zod/schemas/mfa.schema";
 import { AlertCircle, Loader2, Shield } from "lucide-react";
-import {
-  getCSRFToken,
-  verifyMFAAction,
-  verifyMFABackupAction,
-} from "@/server/auth";
+import { verifyMFAAction, verifyMFABackupAction } from "@/server/auth";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
+import { useFormErrorHandler } from "@/hooks/useFormErrorHandler";
 
 interface MFAVerifyFormProps {
   onSuccess: () => void;
@@ -37,8 +35,17 @@ export function MFAVerifyForm({
 }: MFAVerifyFormProps) {
   const [activeTab, setActiveTab] = useState<"totp" | "backup">("totp");
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string>("");
-  const [csrfToken, setCsrfToken] = useState<string>("");
+  // Removed duplicate errorMsg/setErrorMsg state, handled by useFormErrorHandler
+  // --- Custom Hooks ---
+  const { csrfToken, csrfError } = useCsrfToken((name, value) => {
+    mfaForm.setValue("csrfToken", value);
+    backupForm.setValue("csrfToken", value);
+  });
+  // Use destructuring with unique names to avoid redeclaration issues
+  const formErrorHandler = useFormErrorHandler();
+  const errorMsg = formErrorHandler.errorMsg;
+  const setErrorMsg = formErrorHandler.setErrorMsg;
+  const clearErrorMsg = formErrorHandler.clearErrorMsg;
 
   const mfaForm = useForm<z.infer<typeof mfaFormSchema>>({
     resolver: zodResolver(mfaFormSchema),
@@ -49,28 +56,16 @@ export function MFAVerifyForm({
     resolver: zodResolver(backupFormSchema),
     defaultValues: { code: "", csrfToken: "" },
   });
-  useEffect(() => {
-    async function fetchCsrfToken() {
-      try {
-        const token = await getCSRFToken();
-        setCsrfToken(token);
-        mfaForm.setValue("csrfToken", token);
-        backupForm.setValue("csrfToken", token);
-      } catch {
-        const error = "Failed to get CSRF token. Refresh the page.";
-        setErrorMsg(error);
-      }
-    }
-    fetchCsrfToken();
-  }, [mfaForm, backupForm]);
+  // No need for manual CSRF fetch, handled by useCsrfToken
 
   const onSubmitMFA = async (data: z.infer<typeof mfaFormSchema>) => {
     setIsLoading(true);
-    setErrorMsg("");
+    clearErrorMsg();
 
     if (!csrfToken) {
-      const error = "CSRF token not found. Please refresh the page.";
-      setErrorMsg(error);
+      setErrorMsg(
+        csrfError || "CSRF token not found. Please refresh the page."
+      );
       setIsLoading(false);
       return;
     }
@@ -99,11 +94,12 @@ export function MFAVerifyForm({
 
   const onSubmitBackup = async (data: z.infer<typeof backupFormSchema>) => {
     setIsLoading(true);
-    setErrorMsg("");
+    clearErrorMsg();
 
     if (!csrfToken) {
-      const error = "CSRF token not found. Please refresh the page.";
-      setErrorMsg(error);
+      setErrorMsg(
+        csrfError || "CSRF token not found. Please refresh the page."
+      );
       setIsLoading(false);
       return;
     }
@@ -155,13 +151,13 @@ export function MFAVerifyForm({
 
   return (
     <div className="space-y-6">
-      {errorMsg && (
+      {(errorMsg || csrfError) && (
         <div
           role="alert"
           className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-2 rounded-md select-none animate-fadeIn max-w-md mx-auto"
         >
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{errorMsg}</span>
+          <span className="text-sm font-medium">{errorMsg || csrfError}</span>
         </div>
       )}
 

@@ -12,8 +12,10 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertCircle, RefreshCcw, Download, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCcw } from "lucide-react";
+import { BackupCodesDisplay } from "./BackupCodesDisplay";
 import toast from "react-hot-toast";
+import { downloadBackupCodes } from "@/utils/backupCodes";
 
 type RegenerateBackupCodesResult = {
   success?: boolean;
@@ -63,64 +65,18 @@ export function RegenerateBackupCodesDialog({
     }
   };
 
-  const maskEmail = (email: string) => {
-    if (!email) return "";
-    const [username, domain] = email.split("@");
-    const [domainName, extension] = domain.split(".");
-    const maskedUsername =
-      username.length > 2
-        ? username.substring(0, 2) +
-          "*".repeat(Math.max(username.length - 2, 1))
-        : username + "*";
-    const maskedDomain =
-      domainName.length > 2
-        ? domainName.substring(0, 2) +
-          "*".repeat(Math.max(domainName.length - 2, 1))
-        : domainName.substring(0, 1) + "*";
-    return `${maskedUsername}@${maskedDomain}.${extension.substring(
-      0,
-      1
-    )}${"*".repeat(Math.max(extension.length - 1, 1))}`;
-  };
-
-  const downloadBackupCodes = () => {
-    const currentDate = new Date().toLocaleDateString("id-ID");
-    const currentTime = new Date().toLocaleTimeString("id-ID");
-    let content = `${user?.username ?? ""} - Backup Codes\n`;
-    content += `Generated on: ${currentDate} at ${currentTime}\n`;
-    content += `\n`;
-    if (user) {
-      content += `Account Information:\n`;
-      if (user.name) content += `Name: ${user.name}\n`;
-      if (user.username) content += `Username: ${user.username}\n`;
-      if (user.email) content += `Email: ${maskEmail(user.email)}\n`;
-      content += `\n`;
-    }
-    content += `IMPORTANT:\n`;
-    content += `- Save these codes in a safe place\n`;
-    content += `- Each code can only be used once\n`;
-    content += `- Use these codes if you lose access to your authenticator app\n`;
-    content += `- Do not share these codes with anyone\n`;
-    content += `\n`;
-    content += `Backup Codes:\n`;
-    content += `\n`;
-    backupCodes.forEach((code, index) => {
-      content += `${index + 1}. ${code}\n`;
+  const handleDownloadBackupCodes = () => {
+    downloadBackupCodes({
+      codes: backupCodes,
+      user: user
+        ? {
+            name: user.name,
+            username: user.username,
+            email: user.email,
+          }
+        : undefined,
+      filenamePrefix: "backup-codes",
     });
-    content += `\n`;
-    content += `Keep this file secure and delete it once you've saved the codes elsewhere.`;
-
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${
-      user?.username?.toLowerCase() ?? "your-mfa"
-    }-backup-codes-${new Date().toISOString().split("T")[0]}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
     toast.success("Backup codes downloaded successfully!");
   };
 
@@ -205,64 +161,20 @@ export function RegenerateBackupCodesDialog({
         )}
 
         {success && backupCodes.length > 0 && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Please save these backup codes in a safe place. Each code can only
-              be used once if you lose access to the authenticator app.
-              <br />
-              <span className="font-semibold text-destructive">
-                Don&apos;t share the code with anyone!{" "}
-              </span>
-              <br />
-              <span className="text-xs text-muted-foreground">
-                Format: 8 uppercase letters or numbers (A-Z, 0-9)
-              </span>
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 bg-muted/50 border border-border rounded-md p-4 justify-center">
-              {backupCodes.map((code, idx) => (
-                <div
-                  key={idx}
-                  className="font-mono text-base text-center bg-card rounded px-2 py-1 border border-border text-foreground"
-                >
-                  {idx + 1}. {code.replace(/[^A-Z0-9]/g, "")}
-                </div>
-              ))}
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={downloadBackupCodes}
-              className="w-full flex items-center gap-2"
-              disabled={userLoading}
-            >
-              {userLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4" />
-                  Download MFA Backup Codes
-                </>
-              )}
-            </Button>
-
-            <Button
-              className="w-full mt-2"
-              onClick={() => {
-                setIsOpen(false);
-                setBackupCodes([]);
-                setSuccess(false);
-                setErrorMsg("");
-                setIsLoading(false);
-                if (onSuccess) onSuccess();
-              }}
-            >
-              Done
-            </Button>
-          </div>
+          <BackupCodesDisplay
+            codes={backupCodes}
+            onDownload={handleDownloadBackupCodes}
+            userLoading={userLoading}
+            downloadLabel="Download MFA Backup Codes"
+            onDone={() => {
+              setIsOpen(false);
+              setBackupCodes([]);
+              setSuccess(false);
+              setErrorMsg("");
+              setIsLoading(false);
+              if (onSuccess) onSuccess();
+            }}
+          />
         )}
       </DialogContent>
     </Dialog>

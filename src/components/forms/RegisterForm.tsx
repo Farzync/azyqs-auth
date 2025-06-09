@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +21,9 @@ import {
   UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import { getCSRFToken, registerAction } from "@/server/auth";
+import { registerAction } from "@/server/auth";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
+import { useFormErrorHandler } from "@/hooks/useFormErrorHandler";
 import { usePasskeyLogin } from "@/hooks/usePasskeyLogin";
 import { PasskeyLoginButton } from "@/components/forms/PasskeyLoginButton";
 import { useAuth } from "@/contexts/auth-context";
@@ -46,11 +48,9 @@ function ErrorAlert({ message }: { message?: string }) {
 export function RegisterForm() {
   const router = useRouter();
   const { setUser } = useAuth();
-  const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [csrfToken, setCsrfToken] = useState<string>("");
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isFormValid, setIsFormValid] = useState<boolean>(false);
 
   const {
     isPasskeyLoading,
@@ -96,6 +96,11 @@ export function RegisterForm() {
     },
   });
 
+  // --- Custom Hooks ---
+  const { csrfToken, csrfError } =
+    useCsrfToken<keyof RegisterFormValues>(setValue);
+  const { errorMsg, setErrorMsg, clearErrorMsg } = useFormErrorHandler();
+
   const watchedFields = watch();
 
   useEffect(() => {
@@ -112,29 +117,17 @@ export function RegisterForm() {
     setIsFormValid(Boolean(hasRequiredFields && hasNoErrors && isValid));
   }, [watchedFields, errors, isValid, recaptchaToken, csrfToken]);
 
-  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
-
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      try {
-        const token = await getCSRFToken();
-        setCsrfToken(token);
-        setValue("csrfToken", token, { shouldValidate: true });
-      } catch (err) {
-        console.error("Failed to fetch CSRF token:", err);
-        setError("Failed to get CSRF token. Please refresh the page.");
-      }
-    };
-
-    fetchCsrfToken();
-  }, [setValue]);
+  const togglePasswordVisibility = () =>
+    setShowPassword((prev: boolean) => !prev);
 
   const onSubmit = async (data: RegisterFormValues) => {
-    setError("");
+    clearErrorMsg();
     setIsLoading(true);
 
     if (!csrfToken) {
-      setError("CSRF token not found. Please refresh the page.");
+      setErrorMsg(
+        csrfError || "CSRF token not found. Please refresh the page."
+      );
       setIsLoading(false);
       return;
     }
@@ -156,7 +149,7 @@ export function RegisterForm() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        setErrorMsg(result.error);
         resetRecaptcha();
       } else {
         toast.success("Registration successful! Redirecting to login...");
@@ -164,7 +157,7 @@ export function RegisterForm() {
       }
     } catch (err) {
       console.error("Registration error:", err);
-      setError("An error occurred. Please try again.");
+      setErrorMsg("An error occurred. Please try again.");
       resetRecaptcha();
     } finally {
       setIsLoading(false);
@@ -196,7 +189,7 @@ export function RegisterForm() {
           </p>
         </div>
 
-        <ErrorAlert message={passkeyError || error} />
+        <ErrorAlert message={passkeyError || errorMsg || csrfError} />
 
         <div className="flex flex-col gap-4 sm:gap-5">
           <div className="space-y-1.5">
