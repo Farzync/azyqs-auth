@@ -17,6 +17,7 @@ import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 import { getClientIp } from "@/utils/getClientIp";
+import { checkRateLimit } from "@/lib/auth/rateLimit";
 
 /**
  * Verify an MFA code for 2FA login and issue a session token if valid.
@@ -50,18 +51,15 @@ export async function verifyMFAAction(input: {
     clientIp = (await getClientIp()) || "";
   } catch {}
   if (tempUserId && clientIp) {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const failedAttempts = await prisma.userAuditLog.count({
-      where: {
-        userId: tempUserId,
-        ipAddress: clientIp,
-        action: AuditLogAction.LOGIN,
-        method: AuditLogMethod.MFA,
-        success: false,
-        at: { gte: fiveMinutesAgo },
-      },
-    });
-    if (failedAttempts >= 5) {
+    const isRateLimited = await checkRateLimit(
+      tempUserId,
+      clientIp,
+      AuditLogAction.LOGIN,
+      AuditLogMethod.MFA,
+      5 * 60 * 1000,
+      5
+    );
+    if (isRateLimited) {
       await createUserAuditLog({
         userId: tempUserId,
         action: AuditLogAction.LOGIN,
