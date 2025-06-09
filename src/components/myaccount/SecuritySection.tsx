@@ -11,26 +11,27 @@ import {
 import { Alert } from "@/components/ui/alert";
 import { Shield, AlertCircle } from "lucide-react";
 import { getMFAStatusAction } from "@/server/auth";
-import { getUserCredentialsAction } from "@/server/auth/webauthn/getUserCredentials";
-import type { Passkey } from "@/types/passkey";
+import { usePasskeys } from "@/hooks/usePasskeys";
 import { AuditLogSection } from "@/components/sections/security/AuditLogSection";
 import { PasskeySection } from "@/components/sections/security/PasskeySection";
+import { ShowAllPasskeysDialog } from "@/components/dialogs/ShowAllPasskeysDialog";
 import { PasswordSection } from "@/components/sections/security/PasswordSection";
 import { SecuritySectionSkeleton } from "@/components/sections/security/SecuritySkeleton";
 import { MFASection } from "@/components/sections/security/MFASection";
 
-interface SecuritySectionProps {
+export interface SecuritySectionProps {
   isLoading?: boolean;
 }
-
-export function SecuritySection({
-  isLoading: propIsLoading = false,
-}: SecuritySectionProps) {
+export function SecuritySection({ isLoading = false }: SecuritySectionProps) {
+  const [showAllDialog, setShowAllDialog] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [isLoadingMFA, setIsLoadingMFA] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
-  const [isLoadingPasskey, setIsLoadingPasskey] = useState(true);
+  const {
+    passkeys,
+    isLoading: isLoadingPasskey,
+    fetchPasskeys,
+  } = usePasskeys();
 
   const fetchMFAStatus = async () => {
     setIsLoadingMFA(true);
@@ -51,46 +52,19 @@ export function SecuritySection({
     }
   };
 
-  const fetchPasskeys = async () => {
-    setIsLoadingPasskey(true);
-    try {
-      const result = await getUserCredentialsAction();
-      if ("error" in result) {
-        setPasskeys([]);
-        return [];
-      } else {
-        const mapped = (result.credentials || []).map((pk) => ({
-          ...pk,
-          createdAt:
-            typeof pk.createdAt === "string"
-              ? pk.createdAt
-              : pk.createdAt && typeof pk.createdAt.toISOString === "function"
-              ? pk.createdAt.toISOString()
-              : String(pk.createdAt),
-        })) as Passkey[];
-        setPasskeys(mapped);
-        return mapped;
-      }
-    } catch {
-      setPasskeys([]);
-      return [];
-    } finally {
-      setIsLoadingPasskey(false);
-    }
-  };
-
   useEffect(() => {
-    if (!propIsLoading) {
+    if (!isLoading) {
       fetchMFAStatus();
       fetchPasskeys();
     }
-  }, [propIsLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
 
   const handleMFAChange = () => {
     fetchMFAStatus();
   };
 
-  if (propIsLoading) {
+  if (isLoading) {
     return <SecuritySectionSkeleton />;
   }
 
@@ -132,6 +106,12 @@ export function SecuritySection({
             passkeys={passkeys}
             isLoading={isLoadingPasskey}
             onPasskeysChange={fetchPasskeys}
+            onShowAllPasskeys={() => setShowAllDialog(true)}
+          />
+          <ShowAllPasskeysDialog
+            open={showAllDialog}
+            onOpenChange={setShowAllDialog}
+            onPasskeyChanged={fetchPasskeys}
           />
 
           <AuditLogSection />
