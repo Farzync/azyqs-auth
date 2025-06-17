@@ -15,5 +15,6 @@ import { deleteCookie } from "@/lib/auth";
  */
 export async function logoutAction() {
   await deleteCookie("access_token");
+  await deleteCookie("refresh_token");
   return { success: true };
 }

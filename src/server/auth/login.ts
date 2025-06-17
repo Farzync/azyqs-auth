@@ -151,6 +151,15 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
 
       const token = await signToken({ id: user.id });
       await setCookie("access_token", token, { maxAge });
+      const refreshMaxAge = parseJwtPeriodToSeconds(process.env.JWT_REFRESH_PERIOD || "1d");
+      const refreshToken = await signToken({ id: user.id });
+      await setCookie("refresh_token", refreshToken, {
+        maxAge: refreshMaxAge,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+      });
       return { success: true };
     }
   } catch (error) {

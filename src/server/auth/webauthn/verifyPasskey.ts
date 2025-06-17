@@ -104,15 +104,24 @@ export async function verifyPasskeyAction(
     });
 
     const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
-    const token = await signToken({
-      id: credential.user.id,
-    });
+    const refreshMaxAge = parseJwtPeriodToSeconds(
+      process.env.JWT_REFRESH_PERIOD || "1d"
+    );
+    const token = await signToken({ id: credential.user.id });
+    const refreshToken = await signToken({ id: credential.user.id });
 
     await setCookie("access_token", token, {
       maxAge,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+    });
+    await setCookie("refresh_token", refreshToken, {
+      maxAge: refreshMaxAge,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
     });
 
     await createUserAuditLog({

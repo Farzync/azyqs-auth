@@ -43,6 +43,7 @@ export async function verifyMFAAction(input: {
   csrfToken: string;
 }) {
   const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
+  const refreshMaxAge = parseJwtPeriodToSeconds(process.env.JWT_REFRESH_PERIOD || "1d");
   const tempUserId = await getCookie("temp_user_id");
   const timestamp = new Date();
 
@@ -180,10 +181,18 @@ export async function verifyMFAAction(input: {
     }
 
     const token = await signToken({ id: tempUserId });
+    const refreshToken = await signToken({ id: tempUserId });
     await setCookie("access_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge,
+      path: "/",
+    });
+    await setCookie("refresh_token", refreshToken, {
+      maxAge: refreshMaxAge,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       path: "/",
     });
     await deleteCookie("temp_user_id");
