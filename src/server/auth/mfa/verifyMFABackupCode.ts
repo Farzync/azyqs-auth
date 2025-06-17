@@ -46,7 +46,7 @@ export async function verifyMFABackupAction(input: {
   const tempUserId = await getCookie("temp_user_id");
   let auditUserId = tempUserId;
   if (!tempUserId) {
-    const token = await getCookie("token");
+    const token = await getCookie("access_token");
     let payloadId: string | undefined = undefined;
     if (token) {
       try {
@@ -173,7 +173,7 @@ export async function verifyMFABackupAction(input: {
         data: { backupCodes: newBackupCodes },
       });
       const token = await signToken({ id: tempUserId });
-      await setCookie("token", token, {
+      await setCookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge,

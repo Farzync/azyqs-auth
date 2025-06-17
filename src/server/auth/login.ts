@@ -150,7 +150,7 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
       });
 
       const token = await signToken({ id: user.id });
-      await setCookie("token", token, { maxAge });
+      await setCookie("access_token", token, { maxAge });
       return { success: true };
     }
   } catch (error) {

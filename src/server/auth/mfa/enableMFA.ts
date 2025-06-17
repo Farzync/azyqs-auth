@@ -48,7 +48,7 @@ export async function enableMFAAction(input: z.infer<typeof mfaSetupSchema>) {
     );
   }
 
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Not authenticated");
   }

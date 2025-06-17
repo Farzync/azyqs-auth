@@ -8,12 +8,12 @@ import { deleteCookie } from "@/lib/auth";
  * @returns {Object} Success object
  *
  * Side effects:
- * - Deletes the "token" cookie
+ * - Deletes the "access_token" cookie
  *
  * Example usage:
  * await logoutAction();
  */
 export async function logoutAction() {
-  await deleteCookie("token");
+  await deleteCookie("access_token");
   return { success: true };
 }

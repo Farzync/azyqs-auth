@@ -15,7 +15,7 @@ import { getCookie, getUserFromToken } from "@/lib/auth";
  * const profile = await getProfile();
  */
 export async function getProfile() {
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) return null;
   const user = await getUserFromToken(token);
   if (!user) return null;

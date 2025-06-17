@@ -39,7 +39,7 @@ export async function deleteAccountAction(data: unknown) {
     };
   }
 
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Unauthorized");
   }
@@ -80,7 +80,7 @@ export async function deleteAccountAction(data: unknown) {
 
   try {
     await prisma.user.delete({ where: { id: user.id } });
-    await deleteCookie("token");
+    await deleteCookie("access_token");
 
     await createUserAuditLog({
       userId: user.id,

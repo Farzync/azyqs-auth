@@ -78,7 +78,7 @@ export async function verifyMFAAction(input: {
 
   let auditUserId = tempUserId;
   if (!tempUserId) {
-    const token = await getCookie("token");
+    const token = await getCookie("access_token");
     let payloadId: string | undefined = undefined;
     if (token) {
       try {
@@ -180,7 +180,7 @@ export async function verifyMFAAction(input: {
     }
 
     const token = await signToken({ id: tempUserId });
-    await setCookie("token", token, {
+    await setCookie("access_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge,

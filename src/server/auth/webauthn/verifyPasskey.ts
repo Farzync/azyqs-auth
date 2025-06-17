@@ -108,7 +108,7 @@ export async function verifyPasskeyAction(
       id: credential.user.id,
     });
 
-    await setCookie("token", token, {
+    await setCookie("access_token", token, {
       maxAge,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

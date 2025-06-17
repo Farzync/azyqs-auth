@@ -45,7 +45,7 @@ export async function disableMFAAction(
     );
   }
 
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Not authenticated");
   }

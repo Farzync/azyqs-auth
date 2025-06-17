@@ -38,7 +38,7 @@ export async function changePasswordAction(data: unknown) {
     };
   }
 
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Unauthorized");
   }

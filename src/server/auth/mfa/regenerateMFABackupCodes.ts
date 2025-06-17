@@ -24,7 +24,7 @@ import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
  * const result = await regenerateBackupCodesAction();
  */
 export async function regenerateBackupCodesAction() {
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Not authenticated");
   }

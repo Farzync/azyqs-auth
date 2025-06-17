@@ -19,7 +19,7 @@ import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
  * const status = await getMFAStatusAction();
  */
 export async function getMFAStatusAction() {
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Not authenticated");
   }

@@ -37,7 +37,7 @@ export async function updateProfileAction(data: unknown) {
     };
   }
 
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     // No audit log, userId is not available
     return formatError("Unauthorized");
