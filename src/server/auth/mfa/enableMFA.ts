@@ -3,8 +3,7 @@
 import { prisma } from "@/lib/db";
 import { mfaSetupSchema } from "@/lib/zod/schemas/mfa.schema";
 import { z } from "zod";
-import { TokenPayload } from "@/types/token";
-import { formatError, getCookie, verifyToken, logError } from "@/lib/auth";
+import { formatError, getCookie, logError, getUserFromToken } from "@/lib/auth";
 import {
   generateBackupCodes,
   hashBackupCodes,
@@ -52,7 +51,7 @@ export async function enableMFAAction(input: z.infer<typeof mfaSetupSchema>) {
   if (!token) {
     return formatError("Not authenticated");
   }
-  const payload = await verifyToken<TokenPayload>(token);
+  const payload = await getUserFromToken(token);
   if (!payload) {
     return formatError("Invalid token");
   }

@@ -2,32 +2,55 @@ import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 import * as jose from "jose";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-const JWT_PERIOD = process.env.JWT_PERIOD!;
-const maxAge = parseJwtPeriodToSeconds(JWT_PERIOD);
+const JWT_REFRESH_PERIOD = process.env.JWT_REFRESH_PERIOD!;
+const JWT_ACCESS_PERIOD = process.env.JWT_ACCESS_PERIOD!;
+const accessMaxAge = parseJwtPeriodToSeconds(JWT_ACCESS_PERIOD);
+const refreshMaxAge = parseJwtPeriodToSeconds(JWT_REFRESH_PERIOD);
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET not set. Check Environment Variable.");
 }
-if (!JWT_PERIOD) {
-  throw new Error("JWT_PERIOD not set. Check Environment Variable.");
+if (!JWT_ACCESS_PERIOD) {
+  throw new Error("JWT_ACCESS_PERIOD not set. Check Environment Variable.");
+}
+if (!JWT_REFRESH_PERIOD) {
+  throw new Error("JWT_REFRESH_PERIOD not set. Check Environment Variable.");
 }
 
 const secretKey = new TextEncoder().encode(JWT_SECRET);
 
 /**
- * Sign a JWT token with the given payload.
+ * Sign an Access JWT token with the given payload.
  *
  * @param payload {jose.JWTPayload} - The payload to sign
  * @returns {Promise<string>} The signed JWT token
  *
  * Example usage:
- * const token = await signToken({ id: user.id });
+ * const token = await signAccessToken({ id: user.id });
  */
-export async function signToken(payload: jose.JWTPayload): Promise<string> {
+export async function signAccessToken(payload: jose.JWTPayload): Promise<string> {
   const jwt = await new jose.SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime(maxAge + "s")
+    .setExpirationTime(accessMaxAge + "s")
+    .sign(secretKey);
+  return jwt;
+}
+
+/**
+ * Sign a Refresh JWT token with the given payload.
+ *
+ * @param payload {jose.JWTPayload} - The payload to sign
+ * @returns {Promise<string>} The signed JWT token
+ *
+ * Example usage:
+ * const token = await signRefreshToken({ id: user.id });
+ */
+export async function signRefreshToken(payload: jose.JWTPayload): Promise<string> {
+  const jwt = await new jose.SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(refreshMaxAge + "s")
     .sign(secretKey);
   return jwt;
 }

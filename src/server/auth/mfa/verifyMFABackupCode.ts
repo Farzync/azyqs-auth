@@ -3,10 +3,11 @@
 import {
   getCookie,
   formatError,
-  signToken,
+  signAccessToken,
   setCookie,
   deleteCookie,
   logError,
+  signRefreshToken,
 } from "@/lib/auth";
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
@@ -173,8 +174,8 @@ export async function verifyMFABackupAction(input: {
         where: { userId: tempUserId },
         data: { backupCodes: newBackupCodes },
       });
-      const token = await signToken({ id: tempUserId });
-      const refreshToken = await signToken({ id: tempUserId });
+      const token = await signAccessToken({ id: tempUserId });
+      const refreshToken = await signRefreshToken({ id: tempUserId });
       await setCookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

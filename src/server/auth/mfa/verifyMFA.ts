@@ -3,11 +3,12 @@
 import {
   getCookie,
   formatError,
-  signToken,
+  signAccessToken,
   setCookie,
   deleteCookie,
   logError,
   verifyToken,
+  signRefreshToken,
 } from "@/lib/auth";
 import { validateCSRFToken } from "@/server/utils/csrfToken";
 import { verifyMFACode } from "@/lib/auth/mfa";
@@ -180,8 +181,8 @@ export async function verifyMFAAction(input: {
       return formatError("Invalid MFA code");
     }
 
-    const token = await signToken({ id: tempUserId });
-    const refreshToken = await signToken({ id: tempUserId });
+    const token = await signAccessToken({ id: tempUserId });
+    const refreshToken = await signRefreshToken({ id: tempUserId });
     await setCookie("access_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

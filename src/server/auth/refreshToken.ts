@@ -1,6 +1,6 @@
 "use server";
 
-import { getCookie, setCookie, formatError, logError, verifyToken, signToken } from "@/lib/auth";
+import { getCookie, setCookie, formatError, logError, verifyToken, signAccessToken } from "@/lib/auth";
 import { TokenPayload } from "@/types/token";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
 
@@ -27,7 +27,7 @@ export async function refreshTokenAction() {
     }
     // Issue new access token
     const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD || "15m");
-    const accessToken = await signToken({ id: payload.id });
+    const accessToken = await signAccessToken({ id: payload.id });
     await setCookie("access_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
