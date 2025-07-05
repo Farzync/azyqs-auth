@@ -15,7 +15,7 @@ export async function getCurrentUserAuditLogs(
   limit = 20,
   cursor?: { at: Date; id: string }
 ) {
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) return { logs: [], nextCursor: null };
   const user = await getUserFromToken(token);
   if (!user) return { logs: [], nextCursor: null };

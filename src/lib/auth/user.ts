@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { verifyToken } from "@/lib/auth/jwt";
 import { TokenPayload } from "@/types/token";
 import { bcryptCompare } from "@/lib/auth/bcrypt";
+import { refreshTokenAction } from "@/server/auth/refreshToken";
+import { getCookie } from "@/lib/auth";
 
 /**
  * Get user data from a JWT token.
@@ -19,7 +21,14 @@ import { bcryptCompare } from "@/lib/auth/bcrypt";
  * const user = await getUserFromToken(token);
  */
 export async function getUserFromToken(token: string) {
-  const payload = await verifyToken<TokenPayload>(token);
+  let payload = await verifyToken<TokenPayload>(token);
+  if (!payload) {
+    const refreshResult = await refreshTokenAction();
+    if (refreshResult) {
+      const newToken = await getCookie("access_token");
+      payload = await verifyToken<TokenPayload>(newToken || "");
+    }
+  }
   if (!payload) return null;
   const user = await prisma.user.findUnique({ where: { id: payload.id } });
   return user;
@@ -39,7 +48,14 @@ export async function getUserFromToken(token: string) {
  * const sec = await getUserMfaCredentialFromToken(token);
  */
 export async function getUserMfaCredentialFromToken(token: string) {
-  const payload = await verifyToken<TokenPayload>(token);
+  let payload = await verifyToken<TokenPayload>(token);
+  if (!payload) {
+    const refreshResult = await refreshTokenAction();
+    if (refreshResult) {
+      const newToken = await getCookie("access_token");
+      payload = await verifyToken<TokenPayload>(newToken || "");
+    }
+  }
   if (!payload) return null;
   const userMfaCredential = await prisma.userMfaCredential.findUnique({
     where: { userId: payload.id },

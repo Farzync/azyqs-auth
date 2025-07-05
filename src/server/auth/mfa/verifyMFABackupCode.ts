@@ -3,10 +3,11 @@
 import {
   getCookie,
   formatError,
-  signToken,
+  signAccessToken,
   setCookie,
   deleteCookie,
   logError,
+  signRefreshToken,
 } from "@/lib/auth";
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
@@ -43,10 +44,11 @@ export async function verifyMFABackupAction(input: {
   csrfToken: string;
 }) {
   const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
+  const refreshMaxAge = parseJwtPeriodToSeconds(process.env.JWT_REFRESH_PERIOD || "1d");
   const tempUserId = await getCookie("temp_user_id");
   let auditUserId = tempUserId;
   if (!tempUserId) {
-    const token = await getCookie("token");
+    const token = await getCookie("access_token");
     let payloadId: string | undefined = undefined;
     if (token) {
       try {
@@ -172,11 +174,19 @@ export async function verifyMFABackupAction(input: {
         where: { userId: tempUserId },
         data: { backupCodes: newBackupCodes },
       });
-      const token = await signToken({ id: tempUserId });
-      await setCookie("token", token, {
+      const token = await signAccessToken({ id: tempUserId });
+      const refreshToken = await signRefreshToken({ id: tempUserId });
+      await setCookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge,
+        path: "/",
+      });
+      await setCookie("refresh_token", refreshToken, {
+        maxAge: refreshMaxAge,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
         path: "/",
       });
       await deleteCookie("temp_user_id");

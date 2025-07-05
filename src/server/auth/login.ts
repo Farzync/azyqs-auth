@@ -3,13 +3,14 @@
 import { loginSchema } from "@/lib/zod/schemas/login.schema";
 import { prisma } from "@/lib/db";
 import {
-  signToken,
+  signAccessToken,
   verifyRecaptcha,
   setCookie,
   requireValidCSRFToken,
   formatError,
   logError,
   verifyUser,
+  signRefreshToken,
 } from "@/lib/auth";
 import { z } from "zod";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
@@ -37,7 +38,6 @@ import { checkRateLimit } from "@/lib/auth/rateLimit";
  * const result = await loginAction({ username, password, recaptchaToken, csrfToken });
  */
 export async function loginAction(input: z.infer<typeof loginSchema>) {
-  const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
   const parsed = loginSchema.safeParse(input);
   const timestamp = new Date();
 
@@ -149,8 +149,17 @@ export async function loginAction(input: z.infer<typeof loginSchema>) {
         at: timestamp,
       });
 
-      const token = await signToken({ id: user.id });
-      await setCookie("token", token, { maxAge });
+      const token = await signAccessToken({ id: user.id });
+      await setCookie("access_token", token);
+      const refreshMaxAge = parseJwtPeriodToSeconds(process.env.JWT_REFRESH_PERIOD || "1d");
+      const refreshToken = await signRefreshToken({ id: user.id });
+      await setCookie("refresh_token", refreshToken, {
+        maxAge: refreshMaxAge,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+      });
       return { success: true };
     }
   } catch (error) {

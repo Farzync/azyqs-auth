@@ -48,6 +48,26 @@ Azyqs-Auth implements a **zero-trust security model** with comprehensive logging
 </table>
 
 ---
+## 🆕 **June 2025 Security Update**
+
+### Token Management & Session Security
+
+- 🆕 **Refresh Token Implementation:**
+- The system now supports refresh tokens for more secure and flexible session management.
+- The login and logout processes now manage access tokens and refresh tokens separately.
+- 🛡️ **Token Expiration Separation:**
+- Access token and refresh token expirations are now separate, improving security and session control.
+- Token rotation and validation logic has been updated to prevent abuse.
+- 🧹 **Cookie Refactor:**
+- Authentication cookie name changed from `token` to `access_token` system-wide for consistency and best practices.
+
+### Security Implications
+
+- Refresh tokens are stored securely in HttpOnly cookies and are only used to extend sessions without the need to re-login.
+- Access tokens are still used for primary authentication and have a short expiration.
+- Logout now deletes both tokens (access & refresh) to ensure the session is truly ended.
+
+---
 
 ## 🔐 **Authentication Flow**
 

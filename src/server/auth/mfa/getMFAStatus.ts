@@ -1,8 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { TokenPayload } from "@/types/token";
-import { formatError, getCookie, logError, verifyToken } from "@/lib/auth";
+import { formatError, getCookie, getUserFromToken, logError } from "@/lib/auth";
 import { createUserAuditLog } from "@/lib/auditLog";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 
@@ -19,11 +18,11 @@ import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
  * const status = await getMFAStatusAction();
  */
 export async function getMFAStatusAction() {
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Not authenticated");
   }
-  const payload = await verifyToken<TokenPayload>(token);
+  const payload = await getUserFromToken(token);
   if (!payload) {
     return formatError("Invalid token");
   }

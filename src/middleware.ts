@@ -8,7 +8,7 @@ const authRoutes = ["/login", "/register"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = req.cookies.get("token")?.value;
+  const token = req.cookies.get("access_token")?.value;
 
   const isProtected = protectedRoutes.some((route) =>
     pathname.startsWith(route)
@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL("/myaccount", req.url));
       } catch {
         const response = NextResponse.next();
-        response.cookies.delete("token");
+        response.cookies.delete("access_token");
         return response;
       }
     }
@@ -42,7 +42,7 @@ export async function middleware(req: NextRequest) {
     } catch (err) {
       console.error("Token invalid:", err);
       const response = NextResponse.redirect(new URL("/unauthorized", req.url));
-      response.cookies.delete("token");
+      response.cookies.delete("access_token");
       return response;
     }
   }

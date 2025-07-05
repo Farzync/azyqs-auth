@@ -1,8 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { formatError, getCookie, logError, verifyToken } from "@/lib/auth";
-import { TokenPayload } from "@/types/token";
+import { formatError, getCookie, getUserFromToken, logError } from "@/lib/auth";
 import {
   generateBackupCodes,
   hashBackupCodes,
@@ -24,11 +23,11 @@ import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
  * const result = await regenerateBackupCodesAction();
  */
 export async function regenerateBackupCodesAction() {
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Not authenticated");
   }
-  const payload = await verifyToken<TokenPayload>(token);
+  const payload = await getUserFromToken(token);
   if (!payload) {
     return formatError("Invalid token");
   }

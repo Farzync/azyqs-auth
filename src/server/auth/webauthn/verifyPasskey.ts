@@ -5,7 +5,7 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/types";
 import { getCookie, deleteCookie, setCookie } from "@/lib/auth/cookies";
 import { prisma } from "@/lib/db";
 import { parseJwtPeriodToSeconds } from "@/utils/parseJwtPeriod";
-import { formatError, signToken, logError } from "@/lib/auth";
+import { formatError, signAccessToken, logError, signRefreshToken } from "@/lib/auth";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
 import { createUserAuditLog } from "@/lib/auditLog";
 
@@ -104,15 +104,24 @@ export async function verifyPasskeyAction(
     });
 
     const maxAge = parseJwtPeriodToSeconds(process.env.JWT_PERIOD);
-    const token = await signToken({
-      id: credential.user.id,
-    });
+    const refreshMaxAge = parseJwtPeriodToSeconds(
+      process.env.JWT_REFRESH_PERIOD || "1d"
+    );
+    const token = await signAccessToken({ id: credential.user.id });
+    const refreshToken = await signRefreshToken({ id: credential.user.id });
 
-    await setCookie("token", token, {
+    await setCookie("access_token", token, {
       maxAge,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+    });
+    await setCookie("refresh_token", refreshToken, {
+      maxAge: refreshMaxAge,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
     });
 
     await createUserAuditLog({

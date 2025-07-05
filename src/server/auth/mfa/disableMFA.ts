@@ -3,8 +3,7 @@
 import { prisma } from "@/lib/db";
 import { mfaDisableSchema } from "@/lib/zod/schemas/mfa.schema";
 import { z } from "zod";
-import { TokenPayload } from "@/types/token";
-import { formatError, verifyToken, logError, getCookie } from "@/lib/auth";
+import { formatError, logError, getCookie, getUserFromToken } from "@/lib/auth";
 import { validateCSRFToken } from "@/server/utils/csrfToken";
 import { verifyUser } from "@/lib/auth";
 import { AuditLogAction, AuditLogMethod } from "@/types/auditlog";
@@ -45,11 +44,11 @@ export async function disableMFAAction(
     );
   }
 
-  const token = await getCookie("token");
+  const token = await getCookie("access_token");
   if (!token) {
     return formatError("Not authenticated");
   }
-  const payload = await verifyToken<TokenPayload>(token);
+  const payload = await getUserFromToken(token);
   if (!payload) {
     return formatError("Invalid token");
   }

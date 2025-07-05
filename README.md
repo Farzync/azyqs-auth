@@ -159,6 +159,17 @@ azyqs-auth/
 
 ## 🔥 **What's New**
 
+### v2.2.0 - Token Management & Security Update
+
+- 🆕 **Refresh Token Functionality:**
+  - Implemented refresh token support for improved session management and security.
+  - Login and logout processes now manage both access and refresh tokens.
+- 🛡️ **JWT Handling Update:**
+  - Access and refresh tokens now have separate expiration periods for enhanced security.
+  - Improved token rotation and validation logic.
+- 🧹 **Refactor:**
+  - Renamed authentication cookie from `token` to `access_token` across all authentication and user management functions for clarity and best practices.
+
 ### v2.1.1 - Security Update
 
 - 🚦 **Rate limiting for Login, MFA and backup code verification**  
